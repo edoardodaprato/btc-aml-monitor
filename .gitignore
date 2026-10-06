@@ -1,0 +1,42 @@
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Local data (never published) ---
+# SQLite API cache
+*.db
+*.sqlite
+*.sqlite3
+data/cache/
+# Downloaded OFAC SDN list (re-downloadable, versioned in the audit log)
+data/ofac/
+# User-maintained address labels (only the empty template is tracked)
+data/labels.csv
+
+# --- Analysis outputs and logs ---
+# Curated demo outputs live in examples/ and are tracked on purpose
+output/
+reports_out/
+logs/
+*.log
+
+# --- Secrets and personal data ---
+.env
+.env.*
+*.key
+*.pem
+secrets/
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/
