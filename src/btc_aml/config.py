@@ -35,6 +35,12 @@ class DataSourceConfig:
 
 
 @dataclass(frozen=True)
+class CacheConfig:
+    path: Path
+    address_ttl_hours: float
+
+
+@dataclass(frozen=True)
 class ExposureConfig:
     max_hops: int
     hop_decay: tuple[float, ...]
@@ -69,7 +75,7 @@ class RuleConfig:
 @dataclass(frozen=True)
 class AppConfig:
     data_sources: DataSourceConfig
-    cache_path: Path
+    cache: CacheConfig
     ofac_sdn_url: str
     ofac_local_path: Path
     labels_path: Path
@@ -89,7 +95,7 @@ def load_config(config_dir: Path) -> AppConfig:
     try:
         return AppConfig(
             data_sources=DataSourceConfig(**_section(settings, "data_sources")),
-            cache_path=Path(_section(settings, "cache")["path"]),
+            cache=_build_cache(_section(settings, "cache")),
             ofac_sdn_url=_section(settings, "ofac")["sdn_url"],
             ofac_local_path=Path(_section(settings, "ofac")["local_path"]),
             labels_path=Path(_section(settings, "labels")["path"]),
@@ -126,6 +132,13 @@ def _positive_int(value: Any, name: str) -> int:
     if not isinstance(value, int) or value <= 0:
         raise ConfigError(f"'{name}' must be a positive integer, got {value!r}")
     return value
+
+
+def _build_cache(raw: dict[str, Any]) -> CacheConfig:
+    ttl = raw["address_ttl_hours"]
+    if not isinstance(ttl, (int, float)) or ttl < 0:
+        raise ConfigError(f"'address_ttl_hours' must be a non-negative number, got {ttl!r}")
+    return CacheConfig(path=Path(raw["path"]), address_ttl_hours=float(ttl))
 
 
 def _build_exposure(raw: dict[str, Any]) -> ExposureConfig:

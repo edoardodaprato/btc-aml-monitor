@@ -12,6 +12,9 @@ data_sources:
 
 cache:
   path: "data/cache/btc_aml_cache.sqlite"
+  # Confirmed transactions, blocks and historical prices never change: cached forever.
+  # Address histories grow over time: re-downloaded when older than this.
+  address_ttl_hours: 24
 
 ofac:
   # Official U.S. Treasury SDN list (XML). Bitcoin addresses are tagged
