@@ -12,6 +12,7 @@ from btc_aml import __version__
 from btc_aml.analysis import AddressAnalysis, analyze_address
 from btc_aml.config import AppConfig, ConfigError, load_config
 from btc_aml.data_sources.cache import Cache
+from btc_aml.data_sources.ecb import FxError, update_ecb_rates
 from btc_aml.data_sources.http import DataSourceError
 from btc_aml.data_sources.labels import LabelError, import_labels, read_labels
 from btc_aml.data_sources.ofac import OfacError, load_ofac_list, update_ofac_list
@@ -116,6 +117,19 @@ def update_ofac(config_dir: ConfigDirOption = Path("config")) -> None:
     typer.echo(f"Bitcoin addresses (XBT):  {len(ofac.addresses)} ({len(entities)} entities)")
     typer.echo(f"List version (audit):     {ofac.version}")
     typer.echo(f"Saved to:                 {config.ofac_local_path}")
+
+
+@app.command("update-fx")
+def update_fx(config_dir: ConfigDirOption = Path("config")) -> None:
+    """Download ECB EUR/USD reference rates, used to fill gaps in EUR prices."""
+    config = _load_config_or_exit(config_dir)
+    typer.echo(f"Downloading {config.fx_ecb_url} ...")
+    try:
+        rates = update_ecb_rates(config.fx_ecb_url, config.fx_local_path)
+    except FxError as exc:
+        _fail(str(exc))
+    typer.echo(f"EUR/USD rates: {len(rates.usd_per_eur)} days")
+    typer.echo(f"Version (audit): {rates.version}")
 
 
 @app.command("import-labels")
@@ -252,7 +266,7 @@ def _print_tx(tx: dict[str, Any], quote: PriceQuote | None) -> None:
     else:
         eur_value = total_out / SATS_PER_BTC * quote.eur
         typer.echo(
-            f"BTC/EUR:      {quote.eur:,.0f} (as of {quote.as_of})  "
+            f"BTC/EUR:      {quote.eur:,.0f} ({quote.source}, {quote.as_of})  "
             f"-> total value {eur_value:,.2f} EUR"
         )
     for out in tx["vout"]:

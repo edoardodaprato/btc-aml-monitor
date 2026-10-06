@@ -85,6 +85,7 @@ def app_config(config_dir: Path, tmp_path: Path) -> AppConfig:
     """Default configuration with a temporary cache and no real waiting between requests."""
     config = load_config(config_dir)
     cache = dataclasses.replace(config.cache, path=tmp_path / "cache.sqlite")
+    config = dataclasses.replace(config, fx_local_path=tmp_path / "fx.json")  # no local FX file
     sources = dataclasses.replace(
         config.data_sources, backoff_base_seconds=0, requests_per_second=1_000_000
     )

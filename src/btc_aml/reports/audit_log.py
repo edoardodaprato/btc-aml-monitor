@@ -19,6 +19,7 @@ from typing import Any
 from btc_aml import __version__
 from btc_aml.analysis import AddressAnalysis
 from btc_aml.config import AppConfig
+from btc_aml.data_sources.ecb import EcbRates
 from btc_aml.data_sources.ofac import OfacList
 
 
@@ -36,6 +37,7 @@ def build_audit_log(
     finished_at: str,
     config: AppConfig,
     ofac: OfacList,
+    fx: EcbRates | None,
     label_count: int,
     input_info: dict[str, Any],
     analyses: list[AddressAnalysis],
@@ -74,6 +76,11 @@ def build_audit_log(
             "source_url": ofac.source_url,
             "sha256": ofac.sha256,
             "xbt_addresses": len(ofac.addresses),
+        },
+        "fx_rates": {
+            "version": fx.version if fx else "not loaded (EUR gaps not filled)",
+            "downloaded_at": fx.downloaded_at if fx else None,
+            "source_url": fx.source_url if fx else config.fx_ecb_url,
         },
         "labels": {**file_fingerprint(config.labels_path), "count": label_count},
         "parameters": {

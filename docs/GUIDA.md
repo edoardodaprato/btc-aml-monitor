@@ -148,7 +148,11 @@ sempre in Severe. La colonna `score_explanation` mostra il contributo di ogni re
 
 **Prezzi in EUR.** Il prezzo storico arriva da mempool.space: orario per le date recenti,
 settimanale per quelle più vecchie (fino a 7 giorni prima della transazione), assente
-prima di luglio 2010 e per alcuni giorni del 2022. Quando manca, la cella EUR resta vuota.
+prima di luglio 2010. Per alcuni giorni mempool.space ha il prezzo in dollari ma non in
+euro: se hai scaricato i cambi ufficiali BCE con `btc-aml update-fx`, lo strumento converte
+il prezzo in dollari al cambio di riferimento BCE di quel giorno. La colonna
+`btc_eur_price_source` indica sempre quale fonte è stata usata. Se nessun prezzo è
+disponibile, la cella EUR resta vuota.
 
 ## 6. Le regole, in parole semplici
 
@@ -192,6 +196,7 @@ perché le sue soglie hanno senso solo in euro.
 | `btc-aml show-config` | Controlla e mostra la configurazione |
 | `btc-aml fetch-tx <txid>` | Scarica una transazione e ne mostra il valore in EUR |
 | `btc-aml update-ofac` | Scarica la lista OFAC aggiornata |
+| `btc-aml update-fx` | Scarica i cambi di riferimento BCE EUR/USD |
 | `btc-aml import-labels <file.csv>` | Importa etichette da un CSV |
 | `btc-aml screen <indirizzo> ...` | Controlla uno o più indirizzi contro OFAC ed etichette |
 | `btc-aml analyze <indirizzo>` | Analizza un indirizzo con tutte le regole |

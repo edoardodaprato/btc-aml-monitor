@@ -63,6 +63,6 @@ def test_stats_counts_per_namespace() -> None:
     with Cache(Path(":memory:")) as cache:
         cache.put("tx", "a", 1)
         cache.put("tx", "b", 2)
-        cache.put("price_eur", "0", {"eur": None})
+        cache.put("price_point", "0", {"EUR": None})
 
-        assert cache.stats() == {"price_eur": 1, "tx": 2}
+        assert cache.stats() == {"price_point": 1, "tx": 2}

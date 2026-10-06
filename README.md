@@ -32,6 +32,7 @@ pip install -e ".[dev]"
 btc-aml show-config
 btc-aml fetch-tx 7a86eb72b432ce2440aca3d8c71a4a5ec92645e4678ccb211c0ce41d882753ee
 btc-aml update-ofac
+btc-aml update-fx      # ECB EUR/USD rates, fill EUR price gaps
 btc-aml screen 12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL
 btc-aml analyze 12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL
 btc-aml scan-addresses examples/demo_addresses.txt   # CSV reports + audit log in output/

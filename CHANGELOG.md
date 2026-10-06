@@ -5,6 +5,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-10-06
+
+### Added
+- `update-fx`: official ECB EUR/USD reference rates. When mempool.space has a USD price but no EUR price for a day, EUR is derived as USD price / ECB rate (latest fixing within 7 days).
+- `transactions.csv` reports the source of each EUR price (`btc_eur_price_source`); the audit log records the ECB rates version.
+
 ## [0.8.0] - 2026-10-06
 
 ### Added

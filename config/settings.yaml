@@ -22,6 +22,11 @@ ofac:
   sdn_url: "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN.XML"
   local_path: "data/ofac/sanctioned_xbt_addresses.json"
 
+fx:
+  # ECB euro reference rates, used only when mempool.space has a USD but no EUR price.
+  ecb_url: "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip"
+  local_path: "data/fx/ecb_eur_usd.json"
+
 labels:
   path: "data/labels.csv"
 

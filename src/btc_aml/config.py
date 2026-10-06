@@ -84,6 +84,8 @@ class AppConfig:
     cache: CacheConfig
     ofac_sdn_url: str
     ofac_local_path: Path
+    fx_ecb_url: str
+    fx_local_path: Path
     labels_path: Path
     exposure: ExposureConfig
     coinjoin: CoinJoinConfig
@@ -105,6 +107,8 @@ def load_config(config_dir: Path) -> AppConfig:
             cache=_build_cache(_section(settings, "cache")),
             ofac_sdn_url=_section(settings, "ofac")["sdn_url"],
             ofac_local_path=Path(_section(settings, "ofac")["local_path"]),
+            fx_ecb_url=_section(settings, "fx")["ecb_url"],
+            fx_local_path=Path(_section(settings, "fx")["local_path"]),
             labels_path=Path(_section(settings, "labels")["path"]),
             exposure=_build_exposure(_section(settings, "exposure")),
             coinjoin=_build_coinjoin(_section(_section(settings, "heuristics"), "coinjoin")),

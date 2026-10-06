@@ -93,6 +93,7 @@ def run_address_mode(
             finished_at=finished.isoformat(timespec="seconds"),
             config=config,
             ofac=ofac,
+            fx=services.fx,
             label_count=len(labels),
             input_info={**file_fingerprint(input_path), "addresses": len(addresses)},
             analyses=analyses,
