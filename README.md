@@ -12,7 +12,7 @@ and the EBA ML/TF Risk Factors Guidelines for crypto-asset service providers. Ev
 explainable: it carries the rule that fired, its regulatory reference, the score contribution
 and the transaction-level evidence.
 
-> ⚠️ **Status: work in progress (v0.1.0 — project skeleton).** See the [CHANGELOG](CHANGELOG.md)
+> ⚠️ **Status: work in progress (v0.3.0 — data layer).** See the [CHANGELOG](CHANGELOG.md)
 > and the roadmap below.
 
 ## The problem
@@ -30,13 +30,14 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 btc-aml show-config
+btc-aml fetch-tx 7a86eb72b432ce2440aca3d8c71a4a5ec92645e4678ccb211c0ce41d882753ee
 ```
 
 ## Roadmap
 
 - [x] Project skeleton, configuration, CI
-- [ ] SQLite cache
-- [ ] Esplora API client (mempool.space with automatic Blockstream fallback) and BTC/EUR prices
+- [x] SQLite cache
+- [x] Esplora API client (mempool.space with automatic Blockstream fallback) and BTC/EUR prices
 - [ ] OFAC SDN list import and custom address labels
 - [ ] Single-address analysis
 - [ ] 16 red-flag rules
