@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "btc-aml-monitor"
-version = "0.6.0"
+version = "0.7.0"
 description = "Retrospective Bitcoin transaction monitoring for AML compliance: OFAC screening, FATF red-flag rules, multi-hop exposure and explainable risk scoring."
 readme = "README.md"
 license = "MIT"

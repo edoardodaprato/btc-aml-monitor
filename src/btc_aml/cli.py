@@ -181,6 +181,10 @@ def _print_analysis(analysis: AddressAnalysis) -> None:
         f"{sats_to_btc(prof.total_sent_sats):.8f} BTC"
     )
     typer.echo(f"Active         {fmt_time(prof.first_seen)} -> {fmt_time(prof.last_seen)}")
+    score = analysis.score
+    band_color = {"Severe": typer.colors.RED, "High": typer.colors.RED}.get(score.band)
+    typer.secho(f"\nRisk score     {score.score}/100  ({score.band})", fg=band_color, bold=True)
+    typer.echo(f"Explained by   {score.explanation()}")
     typer.echo(f"\nAlerts: {len(analysis.alerts)}")
     for alert in analysis.alerts:
         typer.secho(f"  [{alert.severity.upper()}] {alert.rule_id} - {alert.rule_name}", bold=True)

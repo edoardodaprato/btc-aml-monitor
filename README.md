@@ -12,7 +12,7 @@ and the EBA ML/TF Risk Factors Guidelines for crypto-asset service providers. Ev
 explainable: it carries the rule that fired, its regulatory reference, the score contribution
 and the transaction-level evidence.
 
-> ⚠️ **Status: work in progress (v0.6.0 — rules engine).** See the [CHANGELOG](CHANGELOG.md)
+> ⚠️ **Status: work in progress (v0.7.0 — rules engine and risk scoring).** See the [CHANGELOG](CHANGELOG.md)
 > and the roadmap below.
 
 ## The problem
@@ -80,7 +80,7 @@ are given at section level and should be verified against the official texts.*
 - [x] OFAC SDN list import and custom address labels
 - [x] Single-address analysis
 - [x] Red-flag rules (18 of 21; R02, R17, R20 need multi-hop)
-- [ ] Explainable risk scoring (0–100, with sanctions override)
+- [x] Explainable risk scoring (0–100, with sanctions override)
 - [ ] CSV reports and audit log
 - [ ] Multi-hop exposure, clustering and change detection
 - [ ] Block-range scanning

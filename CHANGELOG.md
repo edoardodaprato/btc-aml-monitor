@@ -5,6 +5,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-06
+
+### Added
+- Explainable risk score (0-100): each rule counts once (weight x strength of its strongest alert), sum capped at 100, configurable bands, direct sanctions exposure forces the Severe band. Every score lists its contributions.
+
 ## [0.6.0] - 2026-10-06
 
 ### Added
