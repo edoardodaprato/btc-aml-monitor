@@ -5,6 +5,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-06
+
+### Added
+- `update-ofac`: downloads the official OFAC SDN XML and extracts "Digital Currency Address - XBT" entries with entity name, SDN uid and programmes. The list version (publish date + SHA-256) is stored for the audit trail.
+- Addresses designated under several entities keep every attribution.
+- Address labels CSV (`address,category,source,date_added`) with empty template, strict line-by-line validation and all-or-nothing `import-labels`.
+- `screen` command and `Screener` combining OFAC and labels.
+- Italian user guide `docs/GUIDA.md`, including the procedure for importing verifiable public label sources.
+
 ## [0.3.0] - 2026-10-06
 
 ### Added

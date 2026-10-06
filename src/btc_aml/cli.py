@@ -12,6 +12,9 @@ from btc_aml import __version__
 from btc_aml.config import AppConfig, ConfigError, load_config
 from btc_aml.data_sources.cache import Cache
 from btc_aml.data_sources.http import DataSourceError
+from btc_aml.data_sources.labels import LabelError, import_labels, read_labels
+from btc_aml.data_sources.ofac import OfacError, load_ofac_list, update_ofac_list
+from btc_aml.screening import Screener
 from btc_aml.services import Services
 
 SATS_PER_BTC = 100_000_000
@@ -91,6 +94,62 @@ def cache_stats(config_dir: ConfigDirOption = Path("config")) -> None:
         typer.echo(f"  {namespace:<12} {count:>8}")
     if not stats:
         typer.echo("  (empty)")
+
+
+@app.command("update-ofac")
+def update_ofac(config_dir: ConfigDirOption = Path("config")) -> None:
+    """Download the official OFAC SDN list and extract its Bitcoin (XBT) addresses."""
+    config = _load_config_or_exit(config_dir)
+    typer.echo(f"Downloading {config.ofac_sdn_url} ...")
+    try:
+        ofac = update_ofac_list(config.ofac_sdn_url, config.ofac_local_path)
+    except OfacError as exc:
+        _fail(str(exc))
+    typer.echo(f"OFAC SDN list published:  {ofac.publish_date} ({ofac.record_count} records)")
+    entities = {entry.entity_uid for entries in ofac.addresses.values() for entry in entries}
+    typer.echo(f"Bitcoin addresses (XBT):  {len(ofac.addresses)} ({len(entities)} entities)")
+    typer.echo(f"List version (audit):     {ofac.version}")
+    typer.echo(f"Saved to:                 {config.ofac_local_path}")
+
+
+@app.command("import-labels")
+def import_labels_command(
+    source: Annotated[Path, typer.Argument(help="CSV with address,category,source,date_added")],
+    config_dir: ConfigDirOption = Path("config"),
+) -> None:
+    """Validate a labels CSV and merge it into the local labels file."""
+    config = _load_config_or_exit(config_dir)
+    try:
+        result = import_labels(source, config.labels_path)
+    except LabelError as exc:
+        _fail(f"Import rejected, nothing changed. {exc}")
+    typer.echo(
+        f"Imported {result.added} labels ({result.duplicates} duplicates skipped). "
+        f"{config.labels_path} now holds {result.total} labels."
+    )
+
+
+@app.command("screen")
+def screen(
+    addresses: Annotated[list[str], typer.Argument(help="One or more Bitcoin addresses.")],
+    config_dir: ConfigDirOption = Path("config"),
+) -> None:
+    """Check addresses against the OFAC SDN list and the local labels (no network)."""
+    config = _load_config_or_exit(config_dir)
+    try:
+        screener = Screener(load_ofac_list(config.ofac_local_path), read_labels(config.labels_path))
+    except (OfacError, LabelError) as exc:
+        _fail(str(exc))
+    typer.echo(f"OFAC list version: {screener.ofac_version}\n")
+    for address in addresses:
+        hits = screener.screen(address)
+        if not hits:
+            typer.echo(f"{address}  no match")
+        for hit in hits:
+            typer.secho(
+                f"{address}  MATCH [{hit.list_name}] {hit.category}: {hit.detail}",
+                fg=typer.colors.RED if hit.category == "sanctioned" else typer.colors.YELLOW,
+            )
 
 
 def _print_tx(tx: dict[str, Any], eur_price: float | None) -> None:
