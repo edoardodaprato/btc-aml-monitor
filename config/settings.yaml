@@ -1,0 +1,47 @@
+# General settings for btc-aml-monitor.
+# Every value here is recorded (as a hash) in the audit log of each analysis run.
+
+data_sources:
+  # Esplora-compatible APIs. The fallback is used automatically when the primary fails.
+  primary_url: "https://mempool.space/api"
+  fallback_url: "https://blockstream.info/api"
+  timeout_seconds: 20
+  max_retries: 4
+  backoff_base_seconds: 1.0        # wait = base * 2^attempt (1s, 2s, 4s, 8s)
+  requests_per_second: 2.0         # self-imposed limit: public APIs, be a good citizen
+
+cache:
+  path: "data/cache/btc_aml_cache.sqlite"
+
+ofac:
+  # Official U.S. Treasury SDN list (XML). Bitcoin addresses are tagged
+  # "Digital Currency Address - XBT".
+  sdn_url: "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN.XML"
+  local_path: "data/ofac/sanctioned_xbt_addresses.json"
+
+labels:
+  path: "data/labels.csv"
+
+exposure:
+  max_hops: 2                      # default depth; hard cap is 3
+  hop_decay: [1.0, 0.5, 0.25]      # exposure weight at hop 1, 2, 3
+  max_tx_per_address: 200          # stop paginating an address history after this many tx
+  max_addresses_per_hop: 50        # expand at most this many counterparties per hop
+  max_analysis_seconds: 600        # time budget for one address analysis
+  high_degree_threshold: 1000      # tx count above which an address is treated as a service
+
+block_scan:
+  max_blocks: 10
+
+scoring:
+  # Bands must cover 0-100 without gaps. Lower bound inclusive.
+  bands:
+    - { name: "Low",    min: 0,  max: 24 }
+    - { name: "Medium", min: 25, max: 49 }
+    - { name: "High",   min: 50, max: 74 }
+    - { name: "Severe", min: 75, max: 100 }
+  # Direct exposure to a sanctioned address always yields this band.
+  sanctions_override_band: "Severe"
+
+output:
+  directory: "output"

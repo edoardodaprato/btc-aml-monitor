@@ -1,0 +1,145 @@
+# Red-flag rule configuration.
+#
+# Each rule has:
+#   enabled   - switch the rule on/off without touching code
+#   weight    - maximum contribution (0-100) to the address risk score
+#   severity  - alert severity: low | medium | high | severe
+#   params    - rule-specific thresholds (validated by the rule itself)
+#
+# EUR thresholds use the BTC/EUR price at the transaction date. When the price is
+# unavailable, rules fall back to the *_btc threshold and the alert says so.
+#
+# The hash of this file is written to the audit log of every run ("rules version").
+
+rules_version: "0.1.0"
+
+rules:
+  R01_OFAC_DIRECT:
+    enabled: true
+    weight: 100
+    severity: severe
+    params: {}
+
+  R02_OFAC_INDIRECT:
+    enabled: true
+    weight: 60
+    severity: high
+    params:
+      min_exposure_share: 0.01       # ignore exposure below 1% of flows after hop decay
+
+  R03_HIGH_RISK_CATEGORY:
+    enabled: true
+    weight: 40
+    severity: high
+    params:
+      categories: [mixer, darknet_market, ransomware, scam]
+      min_exposure_share: 0.01
+
+  R04_COINJOIN:
+    enabled: true
+    weight: 25
+    severity: medium
+    params:
+      min_equal_outputs: 5           # at least N outputs with the same value
+      min_inputs: 5
+
+  R05_PEEL_CHAIN:
+    enabled: true
+    weight: 20
+    severity: medium
+    params:
+      min_chain_length: 4            # consecutive "peel" hops
+      max_peel_ratio: 0.1            # small output <= 10% of the transaction value
+
+  R06_STRUCTURING:
+    enabled: true
+    weight: 25
+    severity: high
+    params:
+      thresholds_eur: [1000, 10000]
+      margin_pct: 10                 # "just below" = within 10% under the threshold
+      min_occurrences: 3
+      window_hours: 72
+
+  R07_PASS_THROUGH:
+    enabled: true
+    weight: 20
+    severity: medium
+    params:
+      max_holding_hours: 24
+      max_residual_pct: 5            # balance left after outflow, % of inflow
+
+  R08_FAN_IN:
+    enabled: true
+    weight: 15
+    severity: medium
+    params:
+      min_senders: 20
+      window_hours: 24
+
+  R09_FAN_OUT:
+    enabled: true
+    weight: 15
+    severity: medium
+    params:
+      min_recipients: 20
+      window_hours: 24
+
+  R10_HIGH_VELOCITY:
+    enabled: true
+    weight: 10
+    severity: low
+    params:
+      max_tx_per_day: 50
+
+  R11_DORMANT_REACTIVATION:
+    enabled: true
+    weight: 15
+    severity: medium
+    params:
+      dormancy_days: 365
+      min_amount_eur: 10000
+      min_amount_btc: 0.2
+
+  R12_NEW_ADDRESS_HIGH_VOLUME:
+    enabled: true
+    weight: 15
+    severity: medium
+    params:
+      first_n_tx: 5
+      max_age_days: 30
+      min_volume_eur: 50000
+      min_volume_btc: 1.0
+
+  R13_ROUND_AMOUNTS:
+    enabled: true
+    weight: 10
+    severity: low
+    params:
+      round_units_btc: [0.1, 1.0]
+      round_units_eur: [1000]
+      min_occurrences: 3
+
+  R14_LARGE_TRANSACTION:
+    enabled: true
+    weight: 15
+    severity: medium
+    params:
+      threshold_eur: 100000
+      threshold_btc: 2.0
+
+  R15_DUST:
+    enabled: true
+    weight: 10
+    severity: low
+    params:
+      max_dust_sats: 1000
+      min_sources: 5
+
+  R16_CONSOLIDATION:
+    enabled: true
+    weight: 10
+    severity: low
+    params:
+      min_inputs: 20
+      max_input_btc: 0.01
