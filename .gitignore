@@ -19,6 +19,8 @@ htmlcov/
 data/cache/
 # Downloaded OFAC SDN list (re-downloadable, versioned in the audit log)
 data/ofac/
+# Downloaded ECB EUR/USD rates (re-downloadable, versioned in the audit log)
+data/fx/
 # User-maintained address labels (only the empty template is tracked)
 data/labels.csv
 
