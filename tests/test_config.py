@@ -21,7 +21,7 @@ def test_default_config_is_valid(config_dir: Path) -> None:
 
     assert config.exposure.max_hops == 2
     assert config.scoring.sanctions_override_band == "Severe"
-    assert len(config.rules) == 16
+    assert len(config.rules) == 18
     assert config.rules["R01_OFAC_DIRECT"].weight == 100
 
 

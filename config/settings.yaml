@@ -33,6 +33,13 @@ exposure:
   max_analysis_seconds: 600        # time budget for one address analysis
   high_degree_threshold: 1000      # tx count above which an address is treated as a service
 
+heuristics:
+  # CoinJoin detection, shared by the CoinJoin rules and by clustering (common-input
+  # ownership does not hold for CoinJoin transactions).
+  coinjoin:
+    min_equal_outputs: 5           # at least N outputs with the same value...
+    min_distinct_inputs: 5         # ...funded by at least N distinct addresses
+
 block_scan:
   max_blocks: 10
 

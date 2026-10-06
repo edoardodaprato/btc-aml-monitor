@@ -11,7 +11,7 @@
 #
 # The hash of this file is written to the audit log of every run ("rules version").
 
-rules_version: "0.1.0"
+rules_version: "0.2.0"
 
 rules:
   R01_OFAC_DIRECT:
@@ -19,13 +19,6 @@ rules:
     weight: 100
     severity: severe
     params: {}
-
-  R02_OFAC_INDIRECT:
-    enabled: true
-    weight: 60
-    severity: high
-    params:
-      min_exposure_share: 0.01       # ignore exposure below 1% of flows after hop decay
 
   R03_HIGH_RISK_CATEGORY:
     enabled: true
@@ -35,13 +28,11 @@ rules:
       categories: [mixer, darknet_market, ransomware, scam]
       min_exposure_share: 0.01
 
-  R04_COINJOIN:
+  R04_COINJOIN:                     # detection thresholds: settings.yaml > heuristics
     enabled: true
     weight: 25
     severity: medium
-    params:
-      min_equal_outputs: 5           # at least N outputs with the same value
-      min_inputs: 5
+    params: {}
 
   R05_PEEL_CHAIN:
     enabled: true
@@ -50,6 +41,7 @@ rules:
     params:
       min_chain_length: 4            # consecutive "peel" hops
       max_peel_ratio: 0.1            # small output <= 10% of the transaction value
+      max_start_txs: 10              # follow chains from the N most recent spends only
 
   R06_STRUCTURING:
     enabled: true
@@ -68,6 +60,7 @@ rules:
     params:
       max_holding_hours: 24
       max_residual_pct: 5            # balance left after outflow, % of inflow
+      min_episodes: 2                # one quick in-and-out alone is not unusual
 
   R08_FAN_IN:
     enabled: true
@@ -116,8 +109,9 @@ rules:
     weight: 10
     severity: low
     params:
+      # EUR round amounts are not checked: with a daily price, intraday FX moves of
+      # 1-3% make "round in EUR" undetectable without many false positives.
       round_units_btc: [0.1, 1.0]
-      round_units_eur: [1000]
       min_occurrences: 3
 
   R14_LARGE_TRANSACTION:
@@ -143,3 +137,28 @@ rules:
     params:
       min_inputs: 20
       max_input_btc: 0.01
+
+  R18_POST_COINJOIN_CONSOLIDATION:
+    enabled: true
+    weight: 20
+    severity: medium
+    params:
+      min_coinjoin_inputs: 2         # inputs coming from CoinJoin transactions
+      max_txs_checked: 10            # caps API calls: previous tx of each input is fetched
+      max_inputs_checked: 10
+
+  R19_CO_SPENDING_FLAGGED:
+    enabled: true
+    weight: 50
+    severity: high
+    params:
+      categories: [sanctioned, mixer, darknet_market, ransomware, scam]
+
+  R21_ANOMALOUS_FEE:
+    enabled: true
+    weight: 10
+    severity: low
+    params:
+      min_fee_multiple: 20           # fee rate >= 20x the block median
+      min_fee_sats: 20000            # ignore tiny absolute fees
+      max_txs_checked: 20

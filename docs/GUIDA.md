@@ -107,7 +107,56 @@ a un auditor o a un'autorità di vigilanza.
 Gli indirizzi OFAC **non** vanno copiati nel file etichette: sono già gestiti
 automaticamente da `btc-aml update-ofac`.
 
-## 5. Comandi disponibili
+## 5. Analisi di un indirizzo
+
+```bash
+btc-aml analyze <indirizzo>
+```
+
+Lo strumento scarica lo storico dell'indirizzo (fino a `max_tx_per_address` transazioni),
+converte ogni importo in euro al prezzo del giorno, esegue tutte le regole attive e
+mostra gli alert con spiegazione e riferimento normativo. La seconda analisi dello stesso
+indirizzo usa la cache ed è quasi istantanea.
+
+Se lo storico supera il limite, l'output lo segnala con **TRUNCATED**: le transazioni più
+vecchie non sono state analizzate.
+
+## 6. Le regole, in parole semplici
+
+| ID | Regola | Cosa significa | Perché è una red flag |
+|---|---|---|---|
+| R01 | Esposizione diretta a sanzioni | L'indirizzo è nella lista OFAC, o ha scambiato fondi direttamente con un indirizzo che lo è | Possibile violazione di sanzioni: porta sempre in fascia Severe |
+| R02 | Esposizione indiretta a sanzioni | Fondi sanzionati a 2-3 passaggi di distanza | *In arrivo con l'analisi multi-hop* |
+| R03 | Categorie ad alto rischio | Transazioni dirette con indirizzi etichettati come mixer, darknet market, ransomware, scam | Origine dei fondi illecita o opaca |
+| R04 | CoinJoin | Partecipazione a transazioni che mescolano le monete di più utenti | Interrompe deliberatamente la tracciabilità |
+| R05 | Peel chain | Catena di transazioni che "sbucciano" piccoli importi e passano il resto avanti | Tipico dell'incasso a rate di fondi rubati |
+| R06 | Structuring | Più importi appena sotto 1.000 € o 10.000 € in poche ore | Frazionamento per evitare i controlli (Travel Rule, soglie interne) |
+| R07 | Pass-through | Fondi ricevuti e rispediti entro 24 ore, saldo che torna a zero | Conto di transito, comportamento da "money mule" |
+| R08 | Fan-in | Molti mittenti diversi in poco tempo | Raccolta di proventi (vittime di truffe, riscatti) |
+| R09 | Fan-out | Molti destinatari diversi in poco tempo | Dispersione dei fondi (layering) |
+| R10 | Velocità anomala | Troppe transazioni in un giorno | Movimentazione automatizzata |
+| R11 | Riattivazione | Indirizzo fermo da oltre un anno che muove importi rilevanti | Possibile incasso di proventi di vecchi reati |
+| R12 | Indirizzo nuovo, volumi alti | Grandi importi nelle prime transazioni | Indirizzo "usa e getta" |
+| R13 | Importi tondi | Più trasferimenti di esattamente 0,1 o 1 BTC | Accordi OTC o pagamenti predefiniti |
+| R14 | Importo elevato | Singola transazione sopra 100.000 € | Rischio intrinseco più alto, richiede verifica dell'origine dei fondi |
+| R15 | Dust | Micro-importi da molte fonti | Attacco di tracciamento: l'indirizzo è osservato |
+| R16 | Consolidamento | Molti piccoli input riuniti in un'unica transazione | Aggregazione di proventi di piccoli illeciti |
+| R17 | Address hopping | Fondi spostati rapidamente su indirizzi nuovi usati una volta | *In arrivo con l'analisi multi-hop* |
+| R18 | Consolidamento post-CoinJoin | Più output di CoinJoin riuniti insieme | Raccolta dei fondi "lavati" prima del deposito su exchange |
+| R19 | Co-spending con indirizzo segnalato | L'indirizzo firma una transazione insieme a un indirizzo sanzionato o ad alto rischio | Probabilmente appartengono alla stessa entità |
+| R20 | Round-trip | I fondi tornano all'origine dopo alcuni passaggi | *In arrivo con l'analisi multi-hop* |
+| R21 | Commissione anomala | Commissione molto sopra la mediana del blocco | Urgenza di spostare i fondi (per esempio dopo un furto) |
+
+**Come leggere gli alert.** Un alert è un indicatore, non una prova. Molte regole
+(fan-in, fan-out, consolidamento) scattano anche per servizi legittimi come gli
+exchange: ogni alert va letto nel contesto del cliente e dell'indirizzo.
+
+**Importi in euro.** Quando il prezzo storico non è disponibile, le regole basate su
+soglie in euro usano la soglia equivalente in BTC e lo scrivono nella spiegazione.
+Lo structuring (R06) viene invece valutato solo sulle transazioni con prezzo noto,
+perché le sue soglie hanno senso solo in euro.
+
+## 7. Comandi disponibili
 
 | Comando | Cosa fa |
 |---|---|
@@ -116,4 +165,5 @@ automaticamente da `btc-aml update-ofac`.
 | `btc-aml update-ofac` | Scarica la lista OFAC aggiornata |
 | `btc-aml import-labels <file.csv>` | Importa etichette da un CSV |
 | `btc-aml screen <indirizzo> ...` | Controlla uno o più indirizzi contro OFAC ed etichette |
+| `btc-aml analyze <indirizzo>` | Analizza un indirizzo con tutte le regole |
 | `btc-aml cache-stats` | Mostra quanti dati sono salvati nella cache locale |

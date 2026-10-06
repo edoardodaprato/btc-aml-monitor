@@ -9,11 +9,15 @@ from typing import Annotated, Any, NoReturn
 import typer
 
 from btc_aml import __version__
+from btc_aml.analysis import AddressAnalysis, analyze_address
 from btc_aml.config import AppConfig, ConfigError, load_config
 from btc_aml.data_sources.cache import Cache
 from btc_aml.data_sources.http import DataSourceError
 from btc_aml.data_sources.labels import LabelError, import_labels, read_labels
 from btc_aml.data_sources.ofac import OfacError, load_ofac_list, update_ofac_list
+from btc_aml.model import sats_to_btc
+from btc_aml.rules.base import fmt_time
+from btc_aml.rules.registry import build_rules
 from btc_aml.screening import Screener
 from btc_aml.services import Services
 
@@ -61,10 +65,10 @@ def show_config(config_dir: ConfigDirOption = Path("config")) -> None:
     bands = ", ".join(f"{b.name} {b.min}-{b.max}" for b in config.scoring.bands)
     typer.echo(f"Risk bands:    {bands}")
     typer.echo("")
-    typer.echo(f"{'RULE':<30} {'ON':<4} {'WEIGHT':>6}  SEVERITY")
+    typer.echo(f"{'RULE':<34} {'ON':<4} {'WEIGHT':>6}  SEVERITY")
     for rule in config.rules.values():
         status = "yes" if rule.enabled else "no"
-        typer.echo(f"{rule.rule_id:<30} {status:<4} {rule.weight:>6.0f}  {rule.severity}")
+        typer.echo(f"{rule.rule_id:<34} {status:<4} {rule.weight:>6.0f}  {rule.severity}")
 
 
 @app.command("fetch-tx")
@@ -136,10 +140,7 @@ def screen(
 ) -> None:
     """Check addresses against the OFAC SDN list and the local labels (no network)."""
     config = _load_config_or_exit(config_dir)
-    try:
-        screener = Screener(load_ofac_list(config.ofac_local_path), read_labels(config.labels_path))
-    except (OfacError, LabelError) as exc:
-        _fail(str(exc))
+    screener = _load_screener_or_exit(config)
     typer.echo(f"OFAC list version: {screener.ofac_version}\n")
     for address in addresses:
         hits = screener.screen(address)
@@ -150,6 +151,50 @@ def screen(
                 f"{address}  MATCH [{hit.list_name}] {hit.category}: {hit.detail}",
                 fg=typer.colors.RED if hit.category == "sanctioned" else typer.colors.YELLOW,
             )
+
+
+@app.command("analyze")
+def analyze(address: str, config_dir: ConfigDirOption = Path("config")) -> None:
+    """Download an address history, run every enabled rule and list the alerts."""
+    config = _load_config_or_exit(config_dir)
+    screener = _load_screener_or_exit(config)
+    try:
+        rules = build_rules(config)
+    except ConfigError as exc:
+        _fail(f"Configuration error: {exc}")
+    with Services.from_config(config) as services:
+        try:
+            analysis = analyze_address(address, services, config, screener, rules)
+        except DataSourceError as exc:
+            _fail(str(exc))
+        _print_analysis(analysis)
+        typer.echo(f"\nAPI requests: {dict(services.http.requests_by_source) or 'none (cache)'}")
+
+
+def _print_analysis(analysis: AddressAnalysis) -> None:
+    prof = analysis.profile
+    typer.echo(f"Address        {prof.address}")
+    scope = f"{len(prof.txs)} of {prof.tx_count_total}" + (" (TRUNCATED)" if prof.truncated else "")
+    typer.echo(f"Transactions   {scope}")
+    typer.echo(
+        f"Received/sent  {sats_to_btc(prof.total_received_sats):.8f} / "
+        f"{sats_to_btc(prof.total_sent_sats):.8f} BTC"
+    )
+    typer.echo(f"Active         {fmt_time(prof.first_seen)} -> {fmt_time(prof.last_seen)}")
+    typer.echo(f"\nAlerts: {len(analysis.alerts)}")
+    for alert in analysis.alerts:
+        typer.secho(f"  [{alert.severity.upper()}] {alert.rule_id} - {alert.rule_name}", bold=True)
+        typer.echo(f"      {alert.explanation}")
+        typer.echo(f"      Ref: {alert.regulatory_reference}")
+    for rule_id, error in analysis.rule_errors.items():
+        typer.secho(f"  NOT EVALUATED {rule_id}: {error}", fg=typer.colors.YELLOW)
+
+
+def _load_screener_or_exit(config: AppConfig) -> Screener:
+    try:
+        return Screener(load_ofac_list(config.ofac_local_path), read_labels(config.labels_path))
+    except (OfacError, LabelError) as exc:
+        _fail(str(exc))
 
 
 def _print_tx(tx: dict[str, Any], eur_price: float | None) -> None:

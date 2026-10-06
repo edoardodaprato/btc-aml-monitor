@@ -5,6 +5,24 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-06
+
+### Added
+- Rule framework: common `Rule` interface (id, name, AML rationale, regulatory reference, parameters), registry that checks code and `rules.yaml` match, engine that records rules failing on API errors instead of aborting.
+- 18 red-flag rules: R01, R03-R16 and the new R18 (post-CoinJoin consolidation), R19 (co-spending with flagged address), R21 (anomalous fee). R02, R17 and R20 follow with multi-hop analysis.
+- CoinJoin detection heuristic (equal-output and Whirlpool 5x5), configurable in `settings.yaml`.
+- Esplora: output spending status (`outspends`) and block median fee rate (mempool.space).
+- `analyze` command.
+
+### Changed
+- R13 no longer checks round EUR amounts: with a daily price they cannot be detected reliably.
+
+## [0.5.0] - 2026-10-06
+
+### Added
+- Normalised data model (transactions, flows net of change, counterparties with pro-rata attribution, balance timeline reconstructed from the current balance).
+- Address profile builder: full history, EUR price per transaction, truncation flag.
+
 ## [0.4.0] - 2026-10-06
 
 ### Added

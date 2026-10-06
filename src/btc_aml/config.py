@@ -51,6 +51,12 @@ class ExposureConfig:
 
 
 @dataclass(frozen=True)
+class CoinJoinConfig:
+    min_equal_outputs: int
+    min_distinct_inputs: int
+
+
+@dataclass(frozen=True)
 class RiskBand:
     name: str
     min: int
@@ -80,6 +86,7 @@ class AppConfig:
     ofac_local_path: Path
     labels_path: Path
     exposure: ExposureConfig
+    coinjoin: CoinJoinConfig
     max_blocks: int
     scoring: ScoringConfig
     output_dir: Path
@@ -100,6 +107,7 @@ def load_config(config_dir: Path) -> AppConfig:
             ofac_local_path=Path(_section(settings, "ofac")["local_path"]),
             labels_path=Path(_section(settings, "labels")["path"]),
             exposure=_build_exposure(_section(settings, "exposure")),
+            coinjoin=_build_coinjoin(_section(_section(settings, "heuristics"), "coinjoin")),
             max_blocks=_positive_int(_section(settings, "block_scan")["max_blocks"], "max_blocks"),
             scoring=_build_scoring(_section(settings, "scoring")),
             output_dir=Path(_section(settings, "output")["directory"]),
@@ -157,6 +165,13 @@ def _build_exposure(raw: dict[str, Any]) -> ExposureConfig:
         max_addresses_per_hop=_positive_int(raw["max_addresses_per_hop"], "max_addresses_per_hop"),
         max_analysis_seconds=_positive_int(raw["max_analysis_seconds"], "max_analysis_seconds"),
         high_degree_threshold=_positive_int(raw["high_degree_threshold"], "high_degree_threshold"),
+    )
+
+
+def _build_coinjoin(raw: dict[str, Any]) -> CoinJoinConfig:
+    return CoinJoinConfig(
+        min_equal_outputs=_positive_int(raw["min_equal_outputs"], "min_equal_outputs"),
+        min_distinct_inputs=_positive_int(raw["min_distinct_inputs"], "min_distinct_inputs"),
     )
 
 
