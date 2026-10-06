@@ -11,7 +11,7 @@
 #
 # The hash of this file is written to the audit log of every run ("rules version").
 
-rules_version: "0.2.0"
+rules_version: "0.3.0"
 
 rules:
   R01_OFAC_DIRECT:
@@ -19,6 +19,13 @@ rules:
     weight: 100
     severity: severe
     params: {}
+
+  R02_OFAC_INDIRECT:                # hops and decay: settings.yaml > exposure
+    enabled: true
+    weight: 60
+    severity: high
+    params:
+      min_exposure_share: 0.01       # ignore exposure below 1% of the analysed volume
 
   R03_HIGH_RISK_CATEGORY:
     enabled: true
@@ -138,6 +145,16 @@ rules:
       min_inputs: 20
       max_input_btc: 0.01
 
+  R17_ADDRESS_HOPPING:
+    enabled: true
+    weight: 20
+    severity: medium
+    params:
+      min_hops: 3                    # consecutive single-use addresses
+      max_hold_hours: 24             # each address forwards within this time...
+      min_forward_ratio: 0.9         # ...at least 90% of what it received
+      max_start_txs: 5               # follow the N most recent spends only (API cost)
+
   R18_POST_COINJOIN_CONSOLIDATION:
     enabled: true
     weight: 20
@@ -153,6 +170,13 @@ rules:
     severity: high
     params:
       categories: [sanctioned, mixer, darknet_market, ransomware, scam]
+
+  R20_ROUND_TRIP:                   # detected while following outgoing funds (exposure)
+    enabled: true
+    weight: 25
+    severity: medium
+    params:
+      min_return_share: 0.01         # returned value >= 1% of the analysed volume
 
   R21_ANOMALOUS_FEE:
     enabled: true

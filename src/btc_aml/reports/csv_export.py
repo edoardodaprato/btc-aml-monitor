@@ -30,6 +30,11 @@ ADDRESS_SCORES_COLUMNS = (
     "score_explanation",
     "history_truncated",
     "rules_not_evaluated",
+    "cluster_size",
+    "exposure_addresses_expanded",
+    "exposure_complete",
+    "high_degree_counterparties",
+    "exposure_notes",
 )
 ALERTS_COLUMNS = (
     "alert_id",
@@ -100,7 +105,21 @@ def _score_rows(analyses: list[AddressAnalysis], analysis_date: str) -> Iterable
             score.explanation(),
             prof.truncated,
             ";".join(sorted(analysis.rule_errors)),
+            len(analysis.cluster),
+            *_exposure_columns(analysis),
         )
+
+
+def _exposure_columns(analysis: AddressAnalysis) -> tuple:
+    exposure = analysis.exposure
+    if exposure is None:
+        return ("", "", "", "not computed")
+    return (
+        exposure.expanded,
+        exposure.complete,
+        ";".join(sorted(exposure.high_degree_nodes)),
+        "; ".join(exposure.notes),
+    )
 
 
 def _alert_rows(analyses: list[AddressAnalysis], run_id: str) -> Iterable[tuple]:

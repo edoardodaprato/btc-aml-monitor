@@ -33,8 +33,10 @@ labels:
 exposure:
   max_hops: 2                      # default depth; hard cap is 3
   hop_decay: [1.0, 0.5, 0.25]      # exposure weight at hop 1, 2, 3
-  max_tx_per_address: 200          # stop paginating an address history after this many tx
-  max_addresses_per_hop: 50        # expand at most this many counterparties per hop
+  max_tx_per_address: 200          # history downloaded for the analysed address
+  max_tx_per_expanded_address: 50  # history downloaded for each counterparty being expanded
+  max_addresses_per_hop: 20        # expand at most this many counterparties per hop
+  min_carried_share: 0.001         # stop following flows below 0.1% of the address volume
   max_analysis_seconds: 600        # time budget for one address analysis
   high_degree_threshold: 1000      # tx count above which an address is treated as a service
 

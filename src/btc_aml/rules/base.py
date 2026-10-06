@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from typing import Any, ClassVar, Protocol, TypeVar
 
 from btc_aml.config import CoinJoinConfig, ConfigError, RuleConfig
+from btc_aml.graph.exposure import ExposureResult
 from btc_aml.model import AddressProfile, Alert, CounterpartyFlows, sats_to_btc
 from btc_aml.screening import Screener, ScreeningHit
 
@@ -30,6 +31,8 @@ class ChainReader(Protocol):
 
     def get_block_median_fee_rate(self, block_hash: str) -> float | None: ...
 
+    def get_address_stats(self, address: str) -> dict[str, Any]: ...
+
 
 @dataclass(frozen=True)
 class AnalysisContext:
@@ -37,6 +40,9 @@ class AnalysisContext:
     screener: Screener
     chain: ChainReader
     coinjoin: CoinJoinConfig
+    cluster: frozenset[str] = frozenset()  # addresses of the same probable entity
+    exposure: ExposureResult | None = None  # multi-hop exposure, if computed
+    hop_decay: tuple[float, ...] = (1.0, 0.5, 0.25)
 
 
 class Rule(ABC):

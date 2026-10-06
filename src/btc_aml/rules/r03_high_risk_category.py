@@ -8,15 +8,17 @@ from btc_aml.rules.base import (
     flagged_counterparties,
     fmt_amount,
 )
+from btc_aml.rules.indirect import indirect_alerts
 from btc_aml.rules.references import EBA_CASP, FATF_ANONYMITY, FATF_SOURCE_OF_FUNDS
 
 
 class HighRiskCategoryExposure(Rule):
-    """The address is labelled, or transacted directly with an address labelled, as high risk.
+    """The address is labelled, or exchanged funds with an address labelled, as high risk.
 
     Funds coming from (or going to) mixers, darknet markets, ransomware or scams are a
-    classic source-of-funds red flag. Exposure below ``min_exposure_share`` of the
-    address volume is ignored to avoid alerting on negligible amounts.
+    classic source-of-funds red flag. Direct counterparties count fully; addresses
+    reached through intermediaries (multi-hop exposure) count with the hop decay.
+    Exposure below ``min_exposure_share`` of the address volume is ignored.
     """
 
     rule_id = "R03_HIGH_RISK_CATEGORY"
@@ -61,4 +63,4 @@ class HighRiskCategoryExposure(Rule):
                     hop_distance=1,
                 )
             )
-        return alerts
+        return alerts + indirect_alerts(self, ctx, categories)

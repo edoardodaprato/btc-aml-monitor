@@ -108,6 +108,7 @@ class FakeChain:
         self.txs: dict[str, dict[str, Any]] = {}
         self.outspends: dict[str, list[dict[str, Any]]] = {}
         self.median_fee: dict[str, float | None] = {}
+        self.tx_counts: dict[str, int] = {}
 
     def add(self, raw: dict[str, Any]) -> dict[str, Any]:
         self.txs[raw["txid"]] = raw
@@ -121,6 +122,9 @@ class FakeChain:
 
     def get_block_median_fee_rate(self, block_hash: str) -> float | None:
         return self.median_fee.get(block_hash)
+
+    def get_address_stats(self, address: str) -> dict[str, Any]:
+        return {"chain_stats": {"tx_count": self.tx_counts.get(address, 2)}}
 
 
 def context(

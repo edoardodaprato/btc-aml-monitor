@@ -229,6 +229,14 @@ def _print_analysis(analysis: AddressAnalysis) -> None:
         f"{sats_to_btc(prof.total_sent_sats):.8f} BTC"
     )
     typer.echo(f"Active         {fmt_time(prof.first_seen)} -> {fmt_time(prof.last_seen)}")
+    typer.echo(f"Cluster        {len(analysis.cluster)} address(es) (common-input + change)")
+    if analysis.exposure is not None:
+        exp = analysis.exposure
+        status = "complete" if exp.complete else "INCOMPLETE: " + "; ".join(exp.notes)
+        typer.echo(
+            f"Exposure       {exp.expanded} counterparties expanded, "
+            f"{len(exp.high_degree_nodes)} high-degree (not expanded), {status}"
+        )
     score = analysis.score
     band_color = {"Severe": typer.colors.RED, "High": typer.colors.RED}.get(score.band)
     typer.secho(f"\nRisk score     {score.score}/100  ({score.band})", fg=band_color, bold=True)

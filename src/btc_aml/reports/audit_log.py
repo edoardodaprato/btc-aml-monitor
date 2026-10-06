@@ -61,6 +61,11 @@ def build_audit_log(
             "rules_not_evaluated": {
                 a.profile.address: a.rule_errors for a in analyses if a.rule_errors
             },
+            "incomplete_exposure": {
+                a.profile.address: a.exposure.notes
+                for a in analyses
+                if a.exposure is not None and not a.exposure.complete
+            },
         },
         "rules": {
             "rules_version": config.rules_version,

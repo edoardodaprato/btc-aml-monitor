@@ -45,7 +45,9 @@ class ExposureConfig:
     max_hops: int
     hop_decay: tuple[float, ...]
     max_tx_per_address: int
+    max_tx_per_expanded_address: int
     max_addresses_per_hop: int
+    min_carried_share: float
     max_analysis_seconds: int
     high_degree_threshold: int
 
@@ -166,7 +168,11 @@ def _build_exposure(raw: dict[str, Any]) -> ExposureConfig:
         max_hops=max_hops,
         hop_decay=decay,
         max_tx_per_address=_positive_int(raw["max_tx_per_address"], "max_tx_per_address"),
+        max_tx_per_expanded_address=_positive_int(
+            raw["max_tx_per_expanded_address"], "max_tx_per_expanded_address"
+        ),
         max_addresses_per_hop=_positive_int(raw["max_addresses_per_hop"], "max_addresses_per_hop"),
+        min_carried_share=float(raw["min_carried_share"]),
         max_analysis_seconds=_positive_int(raw["max_analysis_seconds"], "max_analysis_seconds"),
         high_degree_threshold=_positive_int(raw["high_degree_threshold"], "high_degree_threshold"),
     )

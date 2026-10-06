@@ -28,6 +28,7 @@ class TxInput:
     value_sats: int
     prev_txid: str
     prev_vout: int
+    script_type: str | None = None  # e.g. "v0_p2wpkh", "p2pkh", "v1_p2tr"
 
 
 @dataclass(frozen=True)
@@ -35,6 +36,7 @@ class TxOutput:
     address: str | None  # None for OP_RETURN and non-standard scripts
     value_sats: int
     index: int
+    script_type: str | None = None
 
 
 @dataclass(frozen=True)
@@ -68,11 +70,17 @@ class Transaction:
                 value_sats=(vin.get("prevout") or {}).get("value", 0),
                 prev_txid=vin["txid"],
                 prev_vout=vin["vout"],
+                script_type=(vin.get("prevout") or {}).get("scriptpubkey_type"),
             )
             for vin in raw["vin"]
         )
         outputs = tuple(
-            TxOutput(address=out.get("scriptpubkey_address"), value_sats=out["value"], index=i)
+            TxOutput(
+                address=out.get("scriptpubkey_address"),
+                value_sats=out["value"],
+                index=i,
+                script_type=out.get("scriptpubkey_type"),
+            )
             for i, out in enumerate(raw["vout"])
         )
         return cls(

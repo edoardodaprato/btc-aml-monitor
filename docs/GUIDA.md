@@ -159,7 +159,7 @@ disponibile, la cella EUR resta vuota.
 | ID | Regola | Cosa significa | Perché è una red flag |
 |---|---|---|---|
 | R01 | Esposizione diretta a sanzioni | L'indirizzo è nella lista OFAC, o ha scambiato fondi direttamente con un indirizzo che lo è | Possibile violazione di sanzioni: porta sempre in fascia Severe |
-| R02 | Esposizione indiretta a sanzioni | Fondi sanzionati a 2-3 passaggi di distanza | *In arrivo con l'analisi multi-hop* |
+| R02 | Esposizione indiretta a sanzioni | Fondi sanzionati a 2-3 passaggi di distanza | Le sanzioni si aggirano con intermediari; il peso si riduce a ogni passaggio |
 | R03 | Categorie ad alto rischio | Transazioni dirette con indirizzi etichettati come mixer, darknet market, ransomware, scam | Origine dei fondi illecita o opaca |
 | R04 | CoinJoin | Partecipazione a transazioni che mescolano le monete di più utenti | Interrompe deliberatamente la tracciabilità |
 | R05 | Peel chain | Catena di transazioni che "sbucciano" piccoli importi e passano il resto avanti | Tipico dell'incasso a rate di fondi rubati |
@@ -174,10 +174,10 @@ disponibile, la cella EUR resta vuota.
 | R14 | Importo elevato | Singola transazione sopra 100.000 € | Rischio intrinseco più alto, richiede verifica dell'origine dei fondi |
 | R15 | Dust | Micro-importi da molte fonti | Attacco di tracciamento: l'indirizzo è osservato |
 | R16 | Consolidamento | Molti piccoli input riuniti in un'unica transazione | Aggregazione di proventi di piccoli illeciti |
-| R17 | Address hopping | Fondi spostati rapidamente su indirizzi nuovi usati una volta | *In arrivo con l'analisi multi-hop* |
+| R17 | Address hopping | Fondi spostati rapidamente su indirizzi nuovi usati una volta | Layering: aumenta la distanza dall'origine senza motivo economico |
 | R18 | Consolidamento post-CoinJoin | Più output di CoinJoin riuniti insieme | Raccolta dei fondi "lavati" prima del deposito su exchange |
 | R19 | Co-spending con indirizzo segnalato | L'indirizzo firma una transazione insieme a un indirizzo sanzionato o ad alto rischio | Probabilmente appartengono alla stessa entità |
-| R20 | Round-trip | I fondi tornano all'origine dopo alcuni passaggi | *In arrivo con l'analisi multi-hop* |
+| R20 | Round-trip | I fondi tornano all'origine dopo alcuni passaggi | Flussi circolari: storico artificiale o "ripulitura" |
 | R21 | Commissione anomala | Commissione molto sopra la mediana del blocco | Urgenza di spostare i fondi (per esempio dopo un furto) |
 
 **Come leggere gli alert.** Un alert è un indicatore, non una prova. Molte regole
@@ -189,7 +189,37 @@ soglie in euro usano la soglia equivalente in BTC e lo scrivono nella spiegazion
 Lo structuring (R06) viene invece valutato solo sulle transazioni con prezzo noto,
 perché le sue soglie hanno senso solo in euro.
 
-## 7. Comandi disponibili
+## 7. Analisi multi-hop, cluster e resto
+
+**Esposizione multi-hop.** Lo strumento segue i fondi oltre le controparti dirette, in
+entrambe le direzioni: da dove venivano i soldi ricevuti (origine dei fondi) e dove sono
+andati quelli inviati (destinazione). L'importo è attribuito **pro rata**: se una
+controparte ha ricevuto il 25% delle sue entrate da un indirizzo sanzionato prima di
+pagarci, il 25% di quanto ci ha pagato è considerato esposto. Conta solo ciò che è
+avvenuto **prima** (per l'origine) o **dopo** (per la destinazione).
+
+Il peso nel punteggio si riduce con la distanza (`hop_decay`: 100% al primo passaggio,
+50% al secondo, 25% al terzo). Per non generare migliaia di chiamate, l'espansione ha dei
+limiti: numero di passaggi, indirizzi per passaggio, transazioni per indirizzo, tempo
+massimo. Se un limite interviene, il report lo dice (`exposure_complete = False` e
+`exposure_notes`).
+
+**Nodi ad alto grado.** Gli indirizzi con moltissime transazioni (oltre
+`high_degree_threshold`, di solito exchange e servizi) non vengono espansi: attribuire pro
+rata attraverso il portafoglio comune di un exchange non avrebbe senso. Sono elencati in
+`high_degree_counterparties`.
+
+**Cluster.** Gli indirizzi che firmano insieme una transazione appartengono di norma allo
+stesso portafoglio (euristica *common-input-ownership*); anche il resto (change) torna al
+mittente. Lo strumento raggruppa così gli indirizzi della stessa entità probabile,
+escludendo i CoinJoin. **Un cluster di migliaia di indirizzi** indica tipicamente un
+servizio custodial (per esempio indirizzi di deposito di un exchange raccolti insieme).
+
+**Rilevamento del resto.** Tre euristiche, in ordine di affidabilità: riuso
+dell'indirizzo di input, stesso tipo di script degli input, importo non tondo quando il
+pagamento è tondo. Se il caso è ambiguo, nessun output viene considerato resto.
+
+## 8. Comandi disponibili
 
 | Comando | Cosa fa |
 |---|---|

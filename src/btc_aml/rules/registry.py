@@ -16,6 +16,7 @@ from btc_aml.data_sources.http import DataSourceError
 from btc_aml.model import Alert
 from btc_aml.rules.base import AnalysisContext, Rule
 from btc_aml.rules.r01_ofac_direct import OfacDirectExposure
+from btc_aml.rules.r02_ofac_indirect import OfacIndirectExposure
 from btc_aml.rules.r03_high_risk_category import HighRiskCategoryExposure
 from btc_aml.rules.r04_coinjoin import CoinJoinParticipation
 from btc_aml.rules.r05_peel_chain import PeelChain
@@ -30,14 +31,17 @@ from btc_aml.rules.r13_round_amounts import RoundAmounts
 from btc_aml.rules.r14_large_transaction import LargeTransaction
 from btc_aml.rules.r15_dust import DustReceived
 from btc_aml.rules.r16_consolidation import Consolidation
+from btc_aml.rules.r17_address_hopping import AddressHopping
 from btc_aml.rules.r18_post_coinjoin_consolidation import PostCoinJoinConsolidation
 from btc_aml.rules.r19_co_spending_flagged import CoSpendingWithFlaggedAddress
+from btc_aml.rules.r20_round_trip import RoundTrip
 from btc_aml.rules.r21_anomalous_fee import AnomalousFee
 
 logger = logging.getLogger(__name__)
 
 ALL_RULES: tuple[type[Rule], ...] = (
     OfacDirectExposure,
+    OfacIndirectExposure,
     HighRiskCategoryExposure,
     CoinJoinParticipation,
     PeelChain,
@@ -52,8 +56,10 @@ ALL_RULES: tuple[type[Rule], ...] = (
     LargeTransaction,
     DustReceived,
     Consolidation,
+    AddressHopping,
     PostCoinJoinConsolidation,
     CoSpendingWithFlaggedAddress,
+    RoundTrip,
     AnomalousFee,
 )
 

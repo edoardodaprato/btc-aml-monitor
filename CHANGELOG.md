@@ -5,6 +5,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-06
+
+### Added
+- Change-output detection (address reuse, script type, non-round amount; only unambiguous guesses).
+- Common-input-ownership clustering with union-find, excluding CoinJoin transactions and transactions where the address only receives.
+- Multi-hop exposure in both directions (source and destination of funds) with pro-rata attribution, time ordering, hop decay, per-hop and per-address caps, pruning of negligible flows, a time budget and high-degree nodes treated as entities. Incomplete searches are reported.
+- R02 indirect sanctions exposure, R03 extended to indirect high-risk exposure, R17 address hopping, R20 round-trip: all 21 rules are now active.
+- `address_scores.csv`: cluster size, expanded counterparties, exposure completeness, high-degree counterparties, notes; audit log lists incomplete exposures.
+
+### Changed
+- Default `max_addresses_per_hop` lowered from 50 to 20 and new `max_tx_per_expanded_address` (50) to keep an analysis within a few minutes on public APIs.
+
 ## [0.8.1] - 2026-10-06
 
 ### Added
