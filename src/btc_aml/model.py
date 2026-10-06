@@ -49,9 +49,12 @@ class Transaction:
     vsize: float
     is_coinbase: bool
     eur_price: float | None = None  # BTC/EUR on the block day, if available
+    eur_price_date: str | None = None  # date of the price point actually used
 
     @classmethod
-    def from_esplora(cls, raw: dict[str, Any], eur_price: float | None = None) -> Transaction:
+    def from_esplora(
+        cls, raw: dict[str, Any], eur_price: float | None = None, eur_price_date: str | None = None
+    ) -> Transaction:
         status = raw.get("status", {})
         is_coinbase = any(vin.get("is_coinbase") for vin in raw["vin"])
         inputs = tuple(
@@ -78,6 +81,7 @@ class Transaction:
             vsize=raw.get("weight", 0) / 4,
             is_coinbase=is_coinbase,
             eur_price=eur_price,
+            eur_price_date=eur_price_date,
         )
 
     @property

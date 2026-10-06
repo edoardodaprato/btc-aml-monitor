@@ -121,6 +121,35 @@ indirizzo usa la cache ed è quasi istantanea.
 Se lo storico supera il limite, l'output lo segnala con **TRUNCATED**: le transazioni più
 vecchie non sono state analizzate.
 
+### Analisi di una lista di indirizzi (modalità indirizzi)
+
+```bash
+btc-aml scan-addresses examples/demo_addresses.txt
+```
+
+Il file contiene un indirizzo per riga. Le righe vuote e quelle che iniziano con `#`
+vengono ignorate, quindi puoi annotare il file. Le righe non valide vengono segnalate e
+saltate senza interrompere l'analisi.
+
+Ogni esecuzione crea una cartella `output/<data-ora>/` con:
+
+| File | Contenuto |
+|---|---|
+| `address_scores.csv` | Un indirizzo per riga: punteggio, fascia, regole attivate, spiegazione del punteggio |
+| `alerts.csv` | Un alert per riga: regola, gravità, contributo al punteggio, transazioni di evidenza, importi, spiegazione, riferimento normativo |
+| `transactions.csv` | Tutte le transazioni analizzate, con importo netto, valore in EUR e data del prezzo usato |
+| `audit_log.json` | Traccia di audit: data, versione dello strumento, impronta del file di input, versione e parametri delle regole, versione della lista OFAC, fonti dati usate, indirizzi saltati |
+| `run.log` | Log tecnico dell'esecuzione |
+
+**Come si calcola il punteggio.** Ogni regola attivata aggiunge il suo peso, una volta
+sola anche se genera più alert. Il totale ha un tetto a 100. Fasce: Low 0-24,
+Medium 25-49, High 50-74, Severe 75-100. L'esposizione diretta a sanzioni (R01) porta
+sempre in Severe. La colonna `score_explanation` mostra il contributo di ogni regola.
+
+**Prezzi in EUR.** Il prezzo storico arriva da mempool.space: orario per le date recenti,
+settimanale per quelle più vecchie (fino a 7 giorni prima della transazione), assente
+prima di luglio 2010 e per alcuni giorni del 2022. Quando manca, la cella EUR resta vuota.
+
 ## 6. Le regole, in parole semplici
 
 | ID | Regola | Cosa significa | Perché è una red flag |

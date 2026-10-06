@@ -1,0 +1,11 @@
+# Demo input for btc-aml-monitor (address mode): one Bitcoin address per line.
+# Only addresses that are public for a documented reason are used here.
+
+# OFAC SDN list - Behzad MESRI (SDN uid 24003, programs CYBER2, HRIT-IR)
+12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL
+# OFAC SDN list - address designated under two individuals (SDN uid 38419 and 38420)
+1H939dom7i4WDLCKyGbXUp3fs9CSTNRzgL
+# Genesis block coinbase address (Satoshi Nakamoto, 2009): receives a constant stream of dust
+1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+# Invalid line, kept on purpose to show how errors are reported
+this-is-not-an-address

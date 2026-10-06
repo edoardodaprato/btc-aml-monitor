@@ -12,10 +12,14 @@ def build_address_profile(address: str, services: Services, config: AppConfig) -
     stats = services.esplora.get_address_stats(address)["chain_stats"]
     history = services.esplora.get_address_history(address, config.exposure.max_tx_per_address)
 
-    txs = [
-        Transaction.from_esplora(raw, services.prices.eur_price(raw["status"]["block_time"]))
-        for raw in history.txs
-    ]
+    txs = []
+    for raw in history.txs:
+        quote = services.prices.eur_quote(raw["status"]["block_time"])
+        txs.append(
+            Transaction.from_esplora(
+                raw, quote.eur if quote else None, quote.as_of if quote else None
+            )
+        )
     txs.sort(key=lambda tx: (tx.block_height or 0, tx.txid))  # oldest first, deterministic
 
     return AddressProfile(

@@ -12,7 +12,7 @@ and the EBA ML/TF Risk Factors Guidelines for crypto-asset service providers. Ev
 explainable: it carries the rule that fired, its regulatory reference, the score contribution
 and the transaction-level evidence.
 
-> ⚠️ **Status: work in progress (v0.7.0 — rules engine and risk scoring).** See the [CHANGELOG](CHANGELOG.md)
+> ⚠️ **Status: work in progress (v0.8.0 — address mode end to end).** See the [CHANGELOG](CHANGELOG.md)
 > and the roadmap below.
 
 ## The problem
@@ -34,6 +34,7 @@ btc-aml fetch-tx 7a86eb72b432ce2440aca3d8c71a4a5ec92645e4678ccb211c0ce41d882753e
 btc-aml update-ofac
 btc-aml screen 12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL
 btc-aml analyze 12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL
+btc-aml scan-addresses examples/demo_addresses.txt   # CSV reports + audit log in output/
 ```
 
 A beginner's guide in Italian is available in [docs/GUIDA.md](docs/GUIDA.md).
@@ -81,7 +82,7 @@ are given at section level and should be verified against the official texts.*
 - [x] Single-address analysis
 - [x] Red-flag rules (18 of 21; R02, R17, R20 need multi-hop)
 - [x] Explainable risk scoring (0–100, with sanctions override)
-- [ ] CSV reports and audit log
+- [x] CSV reports and audit log
 - [ ] Multi-hop exposure, clustering and change detection
 - [ ] Block-range scanning
 

@@ -15,9 +15,11 @@ from btc_aml.data_sources.cache import Cache
 from btc_aml.data_sources.http import DataSourceError
 from btc_aml.data_sources.labels import LabelError, import_labels, read_labels
 from btc_aml.data_sources.ofac import OfacError, load_ofac_list, update_ofac_list
+from btc_aml.data_sources.price import PriceQuote
 from btc_aml.model import sats_to_btc
 from btc_aml.rules.base import fmt_time
 from btc_aml.rules.registry import build_rules
+from btc_aml.runner import run_address_mode
 from btc_aml.screening import Screener
 from btc_aml.services import Services
 
@@ -81,8 +83,8 @@ def fetch_tx(txid: str, config_dir: ConfigDirOption = Path("config")) -> None:
         except DataSourceError as exc:
             _fail(str(exc))
         status = tx["status"]
-        price = services.prices.eur_price(status["block_time"]) if status["confirmed"] else None
-        _print_tx(tx, price)
+        quote = services.prices.eur_quote(status["block_time"]) if status["confirmed"] else None
+        _print_tx(tx, quote)
         requests = dict(services.http.requests_by_source) or "none (served from cache)"
         typer.echo(f"\nAPI requests:  {requests}")
 
@@ -171,6 +173,38 @@ def analyze(address: str, config_dir: ConfigDirOption = Path("config")) -> None:
         typer.echo(f"\nAPI requests: {dict(services.http.requests_by_source) or 'none (cache)'}")
 
 
+@app.command("scan-addresses")
+def scan_addresses(
+    input_file: Annotated[
+        Path, typer.Argument(help="Text file with one Bitcoin address per line.")
+    ],
+    config_dir: ConfigDirOption = Path("config"),
+) -> None:
+    """Analyse every address in a file and write CSV reports and the audit log."""
+    config = _load_config_or_exit(config_dir)
+    if not input_file.is_file():
+        _fail(f"File not found: {input_file}")
+    try:
+        ofac = load_ofac_list(config.ofac_local_path)
+        labels = read_labels(config.labels_path)
+        build_rules(config)  # fail fast on configuration errors, before any download
+    except (OfacError, LabelError, ConfigError) as exc:
+        _fail(str(exc))
+
+    with Services.from_config(config) as services:
+        result = run_address_mode(input_file, config, services, ofac, labels, progress=typer.echo)
+
+    typer.echo(
+        f"\nRun {result.run_id}: {len(result.analyses)} analysed, {len(result.skipped)} skipped"
+    )
+    for analysis in sorted(result.analyses, key=lambda a: -a.score.score):
+        score = analysis.score
+        typer.echo(f"  {score.score:>3}  {score.band:<7} {analysis.profile.address}")
+    for item, reason in result.skipped.items():
+        typer.secho(f"  skipped {item}: {reason}", fg=typer.colors.YELLOW)
+    typer.echo(f"\nReports and audit log: {result.output_dir}")
+
+
 def _print_analysis(analysis: AddressAnalysis) -> None:
     prof = analysis.profile
     typer.echo(f"Address        {prof.address}")
@@ -201,7 +235,7 @@ def _load_screener_or_exit(config: AppConfig) -> Screener:
         _fail(str(exc))
 
 
-def _print_tx(tx: dict[str, Any], eur_price: float | None) -> None:
+def _print_tx(tx: dict[str, Any], quote: PriceQuote | None) -> None:
     status = tx["status"]
     total_out = sum(out["value"] for out in tx["vout"])
     typer.echo(f"Transaction   {tx['txid']}")
@@ -213,11 +247,14 @@ def _print_tx(tx: dict[str, Any], eur_price: float | None) -> None:
     typer.echo(f"Inputs:       {len(tx['vin'])}")
     typer.echo(f"Outputs:      {len(tx['vout'])}  total {total_out / SATS_PER_BTC:.8f} BTC")
     typer.echo(f"Fee:          {tx['fee']} sats")
-    if eur_price is None:
+    if quote is None:
         typer.echo("BTC/EUR:      unavailable -> rules will use BTC thresholds")
     else:
-        eur_value = total_out / SATS_PER_BTC * eur_price
-        typer.echo(f"BTC/EUR:      {eur_price:,.0f}  -> total value {eur_value:,.2f} EUR")
+        eur_value = total_out / SATS_PER_BTC * quote.eur
+        typer.echo(
+            f"BTC/EUR:      {quote.eur:,.0f} (as of {quote.as_of})  "
+            f"-> total value {eur_value:,.2f} EUR"
+        )
     for out in tx["vout"]:
         address = out.get("scriptpubkey_address", f"<{out['scriptpubkey_type']}>")
         typer.echo(f"  -> {address:<64} {out['value'] / SATS_PER_BTC:.8f} BTC")

@@ -5,6 +5,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-06
+
+### Added
+- Address mode: `scan-addresses <file>` analyses one address per line (comments and blank lines allowed, invalid lines reported and skipped).
+- Reports per run in `output/<run_id>/`: `address_scores.csv`, `alerts.csv`, `transactions.csv`.
+- Audit trail: `audit_log.json` (timestamps, tool version, input file hash, rules version and config hash, full rule definitions, OFAC list version, labels hash, parameters, data sources used, skipped addresses, rules not evaluated) and `run.log`. Only file names are recorded, never full paths.
+- Demo input `examples/demo_addresses.txt` (OFAC-listed addresses and the genesis address only).
+
+### Fixed
+- Historical prices: mempool.space returns weekly price points for older dates; a price dated up to 7 days before the transaction is now accepted, and the date of the price used is reported (`btc_eur_price_date`).
+
 ## [0.7.0] - 2026-10-06
 
 ### Added

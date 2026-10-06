@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from btc_aml.config import AppConfig
+from btc_aml.data_sources.price import PriceQuote, _extract_quote
 from btc_aml.services import Services
 from tests.conftest import (
     FIXTURE_ADDRESS,
@@ -72,8 +73,8 @@ def test_eur_price_for_transaction_day(app_config: AppConfig, fake_esplora: Fake
     expected = load_fixture("price_tx.json")["prices"][0]["EUR"]
 
     with Services.from_config(app_config, transport=fake_esplora.transport()) as services:
-        assert services.prices.eur_price(block_time) == expected
-        assert services.prices.eur_price(block_time + 60) == expected  # same day -> cache
+        assert services.prices.eur_quote(block_time).eur == expected
+        assert services.prices.eur_quote(block_time + 60).eur == expected  # same day -> cache
 
     assert len(fake_esplora.requests) == 1
 
@@ -83,7 +84,7 @@ def test_eur_price_before_2010_is_unavailable(
 ) -> None:
     with Services.from_config(app_config, transport=fake_esplora.transport()) as services:
         # 2010-05-22 (the "pizza" day): API answers EUR=0 for another date.
-        assert services.prices.eur_price(1_274_552_000) is None
+        assert services.prices.eur_quote(1_274_552_000) is None
 
 
 def test_eur_price_failure_returns_none_and_is_not_cached(
@@ -92,5 +93,21 @@ def test_eur_price_failure_returns_none_and_is_not_cached(
     fake_esplora.fail_status = 503
 
     with Services.from_config(app_config, transport=fake_esplora.transport()) as services:
-        assert services.prices.eur_price(1_785_256_412) is None
+        assert services.prices.eur_quote(1_785_256_412) is None
         assert services.cache.stats() == {}
+
+
+def test_weekly_price_point_up_to_seven_days_old_is_accepted() -> None:
+    day = 1_445_212_800  # 2015-10-19: mempool.space answers with the 2015-10-15 price
+    weekly = {"prices": [{"time": 1_444_867_200, "EUR": 235.1}]}
+
+    quote = _extract_quote(weekly, day)
+
+    assert quote == PriceQuote(eur=235.1, as_of="2015-10-15")
+
+
+def test_price_point_older_than_a_week_is_rejected() -> None:
+    day = 1_445_212_800
+    stale = {"prices": [{"time": day - 8 * 86_400, "EUR": 235.1}]}
+
+    assert _extract_quote(stale, day) is None
