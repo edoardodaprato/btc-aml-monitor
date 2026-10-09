@@ -5,6 +5,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-10
+
+### Added
+- `examples/address_mode` and `examples/block_scan`: real reports from the demo addresses and from block 733459, with third-party addresses redacted (only OFAC-listed and demo addresses are kept).
+- `scripts/build_examples.py`: reproducible copy-and-redact of a run into `examples/`.
+- README: feature list, Mermaid architecture diagram, scoring summary, example output, known limitations versus commercial tools, development notes.
+- GUIDA: published examples and limitations (sections 9 and 10).
+
+### Changed
+- First stable release: the CLI commands, configuration files and report columns are now considered stable.
+
 ## [0.10.0] - 2026-10-10
 
 ### Added

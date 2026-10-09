@@ -12,8 +12,8 @@ and the EBA ML/TF Risk Factors Guidelines for crypto-asset service providers. Ev
 explainable: it carries the rule that fired, its regulatory reference, the score contribution
 and the transaction-level evidence.
 
-> ⚠️ **Status: work in progress (v0.10.0 — block scanning).** See the [CHANGELOG](CHANGELOG.md)
-> and the roadmap below.
+> **Status: v1.0.0.** Feature-complete for its scope: address mode, block-scan mode, 21 rules,
+> explainable scoring, CSV reports and audit trail. See the [CHANGELOG](CHANGELOG.md).
 
 ## The problem
 
@@ -22,6 +22,26 @@ addresses their customers interact with. Commercial blockchain-analytics tools s
 scale, but they are opaque and expensive. This project shows how the core logic works —
 sanctions screening, exposure analysis, typology detection, risk scoring — in readable,
 tested and fully configurable code.
+
+## Features
+
+- **Sanctions screening** against the official OFAC SDN list (532 Bitcoin addresses,
+  65 entities at the time of writing), versioned by publish date and SHA-256.
+- **Custom labels** (mixer, darknet market, ransomware, scam, exchange...) from a CSV where
+  every label must cite its public source. No attribution is ever invented.
+- **21 red-flag rules** mapped to FATF and EBA references, each with its AML rationale,
+  configurable thresholds and weights.
+- **Multi-hop exposure** in both directions (source and destination of funds), with
+  pro-rata attribution, time ordering, decay per hop and hard limits on API usage.
+- **Clustering and change detection** (common-input ownership, CoinJoin excluded).
+- **Explainable 0–100 risk score**: every point is traced to a rule and its evidence;
+  direct sanctions exposure always yields *Severe*.
+- **EUR amounts** at the historical price of each transaction (mempool.space, with ECB
+  EUR/USD reference rates to fill gaps); every price states its date and source.
+- **Audit trail** per run: input hash, rule definitions and config hash, sanctions list
+  version, data sources used, everything that could not be evaluated.
+- **Zero cost, no node**: free public APIs (mempool.space, Blockstream fallback) with rate
+  limiting, retries and a local SQLite cache.
 
 ## Quick start
 
@@ -51,6 +71,115 @@ btc-aml scan-blocks 733459                           # every transaction of a bl
   sanctioned or labelled addresses and their co-spenders ready for address mode.
 
 A beginner's guide in Italian is available in [docs/GUIDA.md](docs/GUIDA.md).
+
+## Example output
+
+Real reports are in [`examples/`](examples) (third-party addresses redacted, see
+[examples/README.md](examples/README.md)).
+
+**Address mode** on [`examples/demo_addresses.txt`](examples/demo_addresses.txt):
+
+```text
+$ btc-aml scan-addresses examples/demo_addresses.txt
+Run 20261009T223246Z: 3 analysed, 1 skipped
+  100  Severe  12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL
+  100  Severe  1H939dom7i4WDLCKyGbXUp3fs9CSTNRzgL
+   30  Medium  1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+  skipped this-is-not-an-address: line 11: not a valid Bitcoin address
+```
+
+| Address | Score | Why (`score_explanation`) |
+|---|---|---|
+| `12aNKp…TKupL` (OFAC: Behzad Mesri) | 100 Severe | R01 +100, R07 pass-through +20, R16 consolidation +10; sanctions override. Its cluster holds 2,578 addresses, the signature of a custodial service sweeping deposits |
+| `1H939d…STNRzgL` (OFAC: listed under two individuals, programs CYBER2/IFSR/IRGC) | 100 Severe | R01 +100, R04 CoinJoin +25, R07 +20, R08 fan-in +15, R11 dormant reactivation +15, R16 +10, R21 anomalous fee +10 |
+| `1A1zP1…DivfNa` (genesis block) | 30 Medium | R10 velocity, R15 dust, R16 consolidation: people still send "tribute" dust to Satoshi's address. A reminder that alerts need context |
+
+An alert from [`alerts.csv`](examples/address_mode/alerts.csv):
+
+```text
+R11_DORMANT_REACTIVATION (medium, +15)
+Inactive for 835 days (last activity 2019-07-17 02:45 UTC), then moved 0.50000000 BTC
+(27,091 EUR) (in) on 2021-10-29 22:21 UTC; EUR threshold 10,000.
+Ref: FATF (2020) Red Flag Indicators of ML/TF - Virtual Assets - transactions: patterns;
+     EBA ML/TF Risk Factors Guidelines (...), Guideline 21 (CASPs)
+```
+
+**Block-scan mode** on block 733459 (25 April 2022, 1,189 transactions):
+
+```text
+$ btc-aml scan-blocks 733459
+      2  R01_OFAC_DIRECT
+      1  R04_COINJOIN
+     60  R09_FAN_OUT
+    106  R14_LARGE_TRANSACTION
+     87  R16_CONSOLIDATION
+      2  R19_CO_SPENDING_FLAGGED
+  [SEVERE] block 733459 R01_OFAC_DIRECT: 3HqA7i3ttECLvgqvq69HNxxUP5BL7Z5YgA ([OFAC SDN]
+  sanctioned: Alex Adrianus Martinus PEIJNENBURG ...) sends 0.12818828 BTC (4,765 EUR)
+  [HIGH] block 733459 R19_CO_SPENDING_FLAGGED: 59 address(es) are clustered with
+  3HqA7i3t... Cluster larger than 50 addresses: typical of a custodial service sweeping
+  customer deposits ...
+Addresses for review: 2 (+474 large-cluster members, commented out)
+```
+
+Two OFAC-listed addresses spend in this block, each swept together with dozens or hundreds
+of other addresses: the pattern of an exchange collecting customer deposits. The structural
+alerts (large transfers, batch payouts, consolidations) are mostly ordinary exchange and
+mining-pool activity, which is why block scan produces leads, not scores.
+
+## Architecture
+
+Each stage has one job and is tested on its own. Rules never call the network directly:
+they read a normalised model and a read-only chain interface.
+
+```mermaid
+flowchart TD
+    IN1[/"addresses.txt<br/>(address mode)"/] --> RUN
+    IN2[/"block range<br/>(block-scan mode)"/] --> RUN
+    RUN["runner<br/>one folder per run"] --> DS
+
+    subgraph DS["data_sources"]
+        HTTP["HTTP client<br/>rate limit, retry, backoff"] --> API1["mempool.space"]
+        HTTP -. "fallback" .-> API2["Blockstream Esplora"]
+        CACHE[("SQLite cache")]
+        PRICE["BTC/EUR price<br/>+ ECB EUR/USD"]
+        LISTS["OFAC SDN + labels CSV"]
+    end
+
+    DS --> MODEL["model<br/>Transaction, AddressProfile, flows"]
+    MODEL --> GRAPH["graph<br/>change detection, clustering,<br/>multi-hop exposure"]
+    MODEL --> RULES
+    GRAPH --> RULES["rules<br/>21 modules, config from rules.yaml"]
+    LISTS --> SCREEN["screening"] --> RULES
+    RULES --> SCORE["scoring<br/>weights, cap 100, bands,<br/>sanctions override"]
+    SCORE --> REP
+    RULES --> REP
+
+    subgraph REP["reports"]
+        CSV["CSV reports"]
+        AUDIT["audit_log.json + run.log"]
+    end
+```
+
+| Folder | Content |
+|---|---|
+| [`src/btc_aml/data_sources`](src/btc_aml/data_sources) | API client, cache, prices, ECB rates, OFAC list, labels |
+| [`src/btc_aml/model.py`](src/btc_aml/model.py) | Normalised transactions, flows, address profiles, alerts |
+| [`src/btc_aml/graph`](src/btc_aml/graph) | Change detection, clustering, multi-hop exposure |
+| [`src/btc_aml/rules`](src/btc_aml/rules) | One module per rule, registry and engine |
+| [`src/btc_aml/scoring`](src/btc_aml/scoring) | Risk score and bands |
+| [`src/btc_aml/block_scan.py`](src/btc_aml/block_scan.py) | Single-transaction checks for block-scan mode |
+| [`src/btc_aml/reports`](src/btc_aml/reports) | CSV export and audit log |
+| [`config`](config) | `settings.yaml` (sources, limits, bands) and `rules.yaml` (rules) |
+| [`tests`](tests) | Offline tests with recorded API responses |
+
+## Scoring
+
+Each triggered rule contributes **once**: its weight times the strength of its strongest
+alert (indirect exposure is weakened by the hop decay). Contributions are summed and capped
+at 100, then mapped to a band: Low 0–24, Medium 25–49, High 50–74, Severe 75–100. Direct
+sanctions exposure (R01) always forces *Severe*. The `score_explanation` column lists every
+contribution, e.g. `R08_FAN_IN 15 + R10_HIGH_VELOCITY 10 + ...`.
 
 ## Red-flag rules
 
@@ -86,6 +215,47 @@ rationale in the docstring. Weights, severities and thresholds live in
 Risk Factors Guidelines, Guideline 21 (CASPs). TFR = Regulation (EU) 2023/1113. References
 are given at section level and should be verified against the official texts.*
 
+## Known limitations (vs commercial tools)
+
+Commercial blockchain-analytics platforms (Chainalysis, Elliptic, TRM Labs...) differ from
+this project in ways that matter for a real compliance decision:
+
+- **Attribution.** Their value lies in millions of proprietary address labels (exchanges,
+  services, illicit actors). Here, attribution is limited to the OFAC list and the labels
+  you import yourself: an address with no listed link scores *Low* even if it belongs to a
+  known illicit service.
+- **Heuristics produce false positives.** Common-input clustering breaks with PayJoin and
+  collaborative transactions, and merges customer deposits when an exchange sweeps them
+  (block scan marks clusters above 50 addresses as likely custodial). Change detection is a
+  guess. Fan-in, fan-out, consolidation and large transfers are everyday exchange and
+  mining-pool activity. Alerts are leads to investigate, not conclusions.
+- **Coverage limits.** At most 200 transactions per address, 20 counterparties per hop,
+  3 hops and 10 minutes per address; block scan reads at most 10 blocks. Results state when
+  a limit was hit (`history_truncated`, `exposure_complete`), but anything beyond it is unseen.
+- **Bitcoin only, on-chain only.** No other chains, no Lightning, no cross-chain bridges,
+  no off-chain exchange data, no Travel Rule messages.
+- **Public APIs.** Free endpoints are rate-limited and slow (about a minute per full block,
+  a few minutes per address with multi-hop exposure) and offer no service level.
+- **Prices.** Historical BTC/EUR points can be up to 7 days old for older dates; the date
+  and source are reported, and EUR thresholds fall back to BTC when no price exists.
+- **CoinJoin detection** is structural (equal outputs, Whirlpool 5x5) and can miss newer
+  protocols or flag batch payouts with equal amounts.
+- **Regulatory references** are at section level and should be verified against the
+  official texts; weights and thresholds are illustrative, not calibrated on real data.
+- **Not a validated system**: no model validation, no case management, no four-eyes
+  workflow, no alert tuning on a real customer base.
+
+## Development
+
+```bash
+pytest           # offline tests: recorded API responses, never the network
+ruff check .     # lint
+ruff format .    # formatting
+```
+
+GitHub Actions runs lint and tests on Python 3.11 and 3.12 on every push, plus a guard that
+fails if local data, outputs or secrets are ever tracked by git.
+
 ## Roadmap
 
 - [x] Project skeleton, configuration, CI
@@ -98,7 +268,10 @@ are given at section level and should be verified against the official texts.*
 - [x] CSV reports and audit log
 - [x] Multi-hop exposure, clustering and change detection
 - [x] Block-range scanning
-- [ ] Portfolio polish: example outputs, architecture diagram, known limitations, v1.0.0
+- [x] Portfolio polish: example outputs, architecture diagram, known limitations, v1.0.0
+
+Possible next steps: HTML report per address, more chains (Ethereum), label import from
+public datasets with provenance checks, alert tuning with a labelled sample.
 
 ## Disclaimer
 

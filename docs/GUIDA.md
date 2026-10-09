@@ -1,6 +1,6 @@
 # Guida a btc-aml-monitor
 
-Guida in italiano per chi parte da zero. Viene aggiornata a ogni fase del progetto.
+Guida in italiano per chi parte da zero. Descrive la versione 1.0.0.
 
 ## 1. Installazione
 
@@ -266,7 +266,51 @@ alert del blocco (grandi trasferimenti, pagamenti multipli, consolidamenti) sono
 parte attività normale di exchange e pool di mining: in un blocco qualsiasi sono
 decine, e vanno letti come elenco di cose da guardare, non come sospetti accertati.
 
-## 9. Comandi disponibili
+## 9. Esempi pronti
+
+La cartella `examples/` contiene i risultati reali di due analisi, così puoi vedere i file
+senza lanciare nulla:
+
+- `examples/address_mode/`: i tre indirizzi di `demo_addresses.txt` (due della lista OFAC e
+  l'indirizzo del blocco genesi);
+- `examples/block_scan/`: la scansione del blocco 733459.
+
+Gli indirizzi che non sono pubblici per un motivo documentato (lista OFAC o indirizzi demo)
+sono sostituiti da `<address redacted>`. Gli altri sono indirizzi di persone qualsiasi:
+pubblicarli accanto a un alert sembrerebbe un'accusa, anche se l'alert è solo un'euristica.
+Gli identificativi delle transazioni (txid) restano, perché servono come prova e chiunque
+può verificarli su un block explorer.
+
+## 10. Limiti rispetto agli strumenti commerciali
+
+Questo progetto mostra la logica di un sistema di transaction monitoring, ma **non
+sostituisce** strumenti come Chainalysis, Elliptic o TRM Labs. Le differenze principali:
+
+- **Attribuzione.** Il vero valore degli strumenti commerciali sono milioni di indirizzi
+  già etichettati (exchange, servizi, attori illeciti). Qui conosciamo solo la lista OFAC e
+  le etichette che importi tu. Un indirizzo senza legami noti risulta *Low* anche se
+  appartiene a un servizio illecito.
+- **Le euristiche sbagliano.** Il cluster per input comuni si rompe con PayJoin e
+  transazioni collaborative, e unisce i depositi dei clienti quando un exchange li
+  raccoglie. Il rilevamento del resto è una stima. Fan-in, fan-out, consolidamenti e grandi
+  trasferimenti sono attività quotidiana di exchange e pool di mining. **Un alert è uno
+  spunto di indagine, non una conclusione.**
+- **Copertura limitata.** Al massimo 200 transazioni per indirizzo, 20 controparti per
+  passaggio, 3 passaggi, 10 minuti per indirizzo, 10 blocchi per scansione. Quando un limite
+  interviene il report lo dice, ma ciò che sta oltre non viene visto.
+- **Solo Bitcoin e solo on-chain.** Niente altre blockchain, Lightning, bridge, dati interni
+  degli exchange o messaggi Travel Rule.
+- **API pubbliche.** Gratuite ma lente e con limiti di richieste; nessuna garanzia di
+  servizio.
+- **Prezzi.** Per le date più vecchie il prezzo BTC/EUR può avere fino a 7 giorni; data e
+  fonte sono sempre indicate.
+- **Riferimenti normativi e soglie.** I riferimenti sono a livello di sezione e vanno
+  verificati sui testi ufficiali; pesi e soglie sono illustrativi, non calibrati su dati
+  reali.
+- **Non è un sistema validato.** Mancano validazione del modello, gestione dei casi,
+  controllo a quattro occhi e taratura degli alert su una clientela reale.
+
+## 11. Comandi disponibili
 
 | Comando | Cosa fa |
 |---|---|

@@ -1,0 +1,2 @@
+block_height,block_hash,block_time,tx_count,median_fee_rate_sat_vb,btc_eur_price,btc_eur_price_date,btc_eur_price_source,alerts
+733459,0000000000000000000565a46801b1ae81f5478842ecf93c75dc920a26247a04,2022-04-25T08:27:06+00:00,1189,8.40,37168.50,2022-04-21,mempool.space EUR,258
