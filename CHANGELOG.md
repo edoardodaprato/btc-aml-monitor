@@ -5,6 +5,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+### Added
+- Project website (`site/`), published to GitHub Pages by the `pages` workflow: https://edoardodaprato.github.io/btc-aml-monitor/
+
 ## [1.0.1] - 2026-10-10
 
 ### Changed

@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>btc-aml-monitor</title>
+<meta name="description" content="Open-source Bitcoin transaction monitoring for AML compliance: OFAC screening, 21 FATF/EBA red-flag rules, multi-hop exposure and explainable risk scoring, built on free public data.">
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --surface-2: #eef1f5;
+    --text: #15191f;
+    --muted: #5a6472;
+    --border: #dde2e9;
+    --accent: #c76a00;
+    --accent-soft: #fff1df;
+    --severe: #b42318;
+    --high: #c4320a;
+    --medium: #b54708;
+    --low: #4b5563;
+    --ok: #067647;
+    --code-bg: #0f1720;
+    --code-text: #e6edf3;
+    --radius: 10px;
+    --max: 1080px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1117;
+      --surface: #151b23;
+      --surface-2: #1c2430;
+      --text: #e6edf3;
+      --muted: #9aa5b4;
+      --border: #2a3441;
+      --accent: #f59e0b;
+      --accent-soft: #2a1f0d;
+      --severe: #f97066;
+      --high: #fb8a5c;
+      --medium: #fdb022;
+      --low: #a5b0be;
+      --ok: #47cd89;
+      --code-bg: #0a0e14;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --surface: #151b23;
+    --surface-2: #1c2430;
+    --text: #e6edf3;
+    --muted: #9aa5b4;
+    --border: #2a3441;
+    --accent: #f59e0b;
+    --accent-soft: #2a1f0d;
+    --severe: #f97066;
+    --high: #fb8a5c;
+    --medium: #fdb022;
+    --low: #a5b0be;
+    --ok: #47cd89;
+    --code-bg: #0a0e14;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  code { font-size: 0.88em; background: var(--surface-2); padding: 0.1em 0.35em; border-radius: 4px; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 16px; }
+
+  header.nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  header.nav .wrap { display: flex; align-items: center; gap: 24px; height: 56px; }
+  .brand { font-weight: 700; color: var(--text); white-space: nowrap; }
+  .brand span { color: var(--accent); }
+  header.nav nav { display: flex; gap: 18px; overflow-x: auto; font-size: 14px; }
+  header.nav nav a { color: var(--muted); white-space: nowrap; }
+  header.nav nav a:hover { color: var(--text); text-decoration: none; }
+
+  .hero { padding-top: 72px; padding-bottom: 48px; }
+  .eyebrow { color: var(--accent); font-weight: 600; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .hero h1 { font-size: clamp(32px, 5vw, 52px); line-height: 1.1; margin: 12px 0 16px; letter-spacing: -0.02em; }
+  .hero p.lead { font-size: clamp(17px, 2vw, 20px); color: var(--muted); max-width: 720px; margin: 0 0 28px; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn {
+    display: inline-block; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 15px;
+    border: 1px solid var(--border); color: var(--text); background: var(--surface);
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #111; }
+  .btn:hover { text-decoration: none; filter: brightness(1.05); }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 44px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .stat b { display: block; font-size: 28px; line-height: 1.2; }
+  .stat span { color: var(--muted); font-size: 14px; }
+
+  section { padding: 56px 0; border-top: 1px solid var(--border); }
+  section h2 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.01em; }
+  section .sub { color: var(--muted); margin: 0 0 28px; max-width: 760px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .card h3 { margin: 0 0 8px; font-size: 17px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .step-num { display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 2px 10px; margin-bottom: 10px; }
+
+  .pipeline { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin-bottom: 24px; }
+  .pipeline .node { flex: 1 1 120px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; font-size: 14px; }
+  .pipeline .node b { display: block; font-size: 15px; }
+  .pipeline .node span { color: var(--muted); font-size: 13px; }
+  .pipeline .arrow { align-self: center; color: var(--muted); }
+
+  .score-row { display: grid; grid-template-columns: 180px 1fr 60px; gap: 12px; align-items: center; margin: 8px 0; font-size: 14px; }
+  .bar { height: 12px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+  .score-row .v { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--surface-2); font-weight: 600; white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  td.id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+  .sev-severe { color: var(--severe); }
+  .sev-high { color: var(--high); }
+  .sev-medium { color: var(--medium); }
+  .sev-low { color: var(--low); }
+  .mode { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+  pre.term {
+    background: var(--code-bg); color: var(--code-text); border-radius: var(--radius);
+    padding: 18px; overflow-x: auto; font-size: 13px; line-height: 1.55; margin: 0;
+  }
+  pre.term .c { color: #8b949e; }
+  pre.term .r { color: #ff7b72; }
+  pre.term .y { color: #e3b341; }
+
+  ul.limits { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  ul.limits li { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius); padding: 16px 18px; font-size: 15px; color: var(--muted); }
+  ul.limits li b { color: var(--text); display: block; margin-bottom: 4px; }
+
+  footer { border-top: 1px solid var(--border); padding: 32px 0 48px; color: var(--muted); font-size: 14px; }
+  footer .disclaimer { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 20px; }
+
+  @media (max-width: 820px) {
+    .grid-3, .grid-2, ul.limits { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .score-row { grid-template-columns: 120px 1fr 44px; }
+    header.nav .wrap { gap: 16px; }
+    .pipeline .arrow { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top">btc-aml<span>-monitor</span></a>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#modes">Modes</a>
+      <a href="#scoring">Scoring</a>
+      <a href="#rules">Rules</a>
+      <a href="#example">Example</a>
+      <a href="#limits">Limitations</a>
+      <a href="https://github.com/edoardodaprato/btc-aml-monitor">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap hero">
+    <div class="eyebrow">Open-source AML transaction monitoring</div>
+    <h1>Explainable Bitcoin risk scoring,<br>built on free public data.</h1>
+    <p class="lead">btc-aml-monitor screens Bitcoin addresses and blocks against the OFAC sanctions
+      list and 21 red-flag rules derived from FATF and EBA guidance. Every point of the risk score
+      is traced to a rule, its regulatory reference and the transactions behind it.</p>
+    <div class="buttons">
+      <a class="btn primary" href="https://github.com/edoardodaprato/btc-aml-monitor">View on GitHub</a>
+      <a class="btn" href="https://github.com/edoardodaprato/btc-aml-monitor/blob/main/docs/GUIDE.md">User guide</a>
+      <a class="btn" href="https://github.com/edoardodaprato/btc-aml-monitor/tree/main/examples">Example reports</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><b>21</b><span>red-flag rules (FATF, EBA, TFR)</span></div>
+      <div class="stat"><b>532</b><span>OFAC-listed Bitcoin addresses screened</span></div>
+      <div class="stat"><b>149</b><span>offline tests, CI on every push</span></div>
+      <div class="stat"><b>€0</b><span>no paid APIs, no node, runs on a laptop</span></div>
+    </div>
+  </div>
+
+  <section id="problem">
+    <div class="wrap grid-2">
+      <div>
+        <h2>The problem</h2>
+        <p class="sub" style="margin:0">Crypto-asset service providers (VASPs/CASPs) must know whether the
+          addresses their customers deal with are sanctioned, linked to illicit activity or behaving like a
+          laundering pattern, and they must justify that answer to auditors and supervisors.</p>
+      </div>
+      <div>
+        <h2>The approach</h2>
+        <p class="sub" style="margin:0">Commercial blockchain-analytics tools solve this at scale, but they are
+          expensive and opaque. This project implements the core logic in readable, tested and fully
+          configurable code, so every alert can be explained and every threshold challenged.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <h2>How it works</h2>
+      <p class="sub">A pipeline of small, independently tested stages. Rules never touch the network:
+        they read a normalised model of transactions and flows.</p>
+      <div class="pipeline">
+        <div class="node"><b>Input</b><span>address list or block range</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>Data sources</b><span>mempool.space, Blockstream fallback, SQLite cache</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>Model</b><span>transactions, flows, EUR prices</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>Graph</b><span>clustering, change, multi-hop exposure</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>Rules</b><span>21 modules, YAML thresholds</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>Score &amp; reports</b><span>0–100, CSV, audit log</span></div>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <div class="step-num">Screening</div>
+          <h3>Sanctions and labels</h3>
+          <p>The official OFAC SDN list, versioned by publish date and SHA-256, plus your own labels.
+            Every label must cite a verifiable public source; nothing is ever invented.</p>
+        </div>
+        <div class="card">
+          <div class="step-num">Exposure</div>
+          <h3>Follow the money</h3>
+          <p>Up to 3 hops in both directions, with pro-rata attribution, time ordering and a weight that
+            decays at each hop. Exchanges and other high-degree nodes are not expanded.</p>
+        </div>
+        <div class="card">
+          <div class="step-num">Heuristics</div>
+          <h3>Who controls what</h3>
+          <p>Common-input-ownership clustering (CoinJoin excluded), change detection and structural
+            CoinJoin detection. Every alert that relies on a heuristic says so.</p>
+        </div>
+        <div class="card">
+          <div class="step-num">Prices</div>
+          <h3>Amounts in EUR</h3>
+          <p>Each transaction is valued at its historical BTC/EUR price, with ECB EUR/USD reference rates
+            filling gaps. Every price states its date and source.</p>
+        </div>
+        <div class="card">
+          <div class="step-num">Traceability</div>
+          <h3>Audit trail per run</h3>
+          <p>Input hash, rule definitions and config hash, sanctions list version, data sources used,
+            and everything that could not be evaluated or was cut by a limit.</p>
+        </div>
+        <div class="card">
+          <div class="step-num">Engineering</div>
+          <h3>Built to be adopted</h3>
+          <p>Python 3.11+, typed and documented, configurable in YAML, offline test suite, polite API
+            client with rate limiting, retries and automatic fallback.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="modes">
+    <div class="wrap">
+      <h2>Two modes</h2>
+      <p class="sub">Start from the customers you care about, or from the blockchain itself.</p>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Address mode · <code>scan-addresses</code></h3>
+          <p>Scores each address 0–100 on its full history with all 21 rules and multi-hop exposure.
+            Writes <code>address_scores.csv</code>, <code>alerts.csv</code>,
+            <code>transactions.csv</code> and the audit log.</p>
+        </div>
+        <div class="card">
+          <h3>Block-scan mode · <code>scan-blocks</code></h3>
+          <p>Checks every transaction of up to 10 blocks with the rules that work on a single
+            transaction, clusters addresses across the block, and lists sanctioned addresses and their
+            co-spenders for a full address-mode review.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="scoring">
+    <div class="wrap grid-2">
+      <div>
+        <h2>Explainable scoring</h2>
+        <p class="sub">Each triggered rule counts once: its weight times the strength of its strongest
+          alert. Contributions are summed and capped at 100, then mapped to a band:
+          <b>Low</b> 0–24, <b>Medium</b> 25–49, <b>High</b> 50–74, <b>Severe</b> 75–100.
+          Direct sanctions exposure always forces <b>Severe</b>.</p>
+        <p class="sub" style="margin:0">Real example: an address designated on the OFAC list, from
+          the published <a href="https://github.com/edoardodaprato/btc-aml-monitor/tree/main/examples/address_mode">example reports</a>.</p>
+      </div>
+      <div class="card">
+        <h3><code>1H939d…STNRzgL</code> · 100 <span class="tag sev-severe">Severe</span></h3>
+        <div class="score-row"><span>R01 OFAC direct</span><div class="bar"><i style="width:100%"></i></div><span class="v">+100</span></div>
+        <div class="score-row"><span>R04 CoinJoin</span><div class="bar"><i style="width:25%"></i></div><span class="v">+25</span></div>
+        <div class="score-row"><span>R07 Pass-through</span><div class="bar"><i style="width:20%"></i></div><span class="v">+20</span></div>
+        <div class="score-row"><span>R08 Fan-in</span><div class="bar"><i style="width:15%"></i></div><span class="v">+15</span></div>
+        <div class="score-row"><span>R11 Dormant reactivation</span><div class="bar"><i style="width:15%"></i></div><span class="v">+15</span></div>
+        <div class="score-row"><span>R16 Consolidation</span><div class="bar"><i style="width:10%"></i></div><span class="v">+10</span></div>
+        <div class="score-row"><span>R21 Anomalous fee</span><div class="bar"><i style="width:10%"></i></div><span class="v">+10</span></div>
+        <p style="margin-top:12px">Sum 195, capped at 100; direct sanctions exposure forces the Severe band.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="rules">
+    <div class="wrap">
+      <h2>The 21 red-flag rules</h2>
+      <p class="sub">One module per rule, with its AML rationale in the code. Weights, severities and thresholds
+        live in <code>rules.yaml</code>. Rules marked “+ block” also run in block-scan mode.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Rule</th><th>What it detects</th><th>Severity</th><th>Reference</th></tr></thead>
+          <tbody>
+            <tr><td class="id">R01</td><td>Direct sanctions exposure <span class="mode">+ block</span></td><td>Address on the OFAC SDN list, or direct transactions with one</td><td><span class="tag sev-severe">severe</span></td><td>OFAC SDN; FATF RFI</td></tr>
+            <tr><td class="id">R02</td><td>Indirect sanctions exposure</td><td>Sanctioned funds within N hops, weight decayed per hop</td><td><span class="tag sev-high">high</span></td><td>OFAC SDN; FATF RFI</td></tr>
+            <tr><td class="id">R03</td><td>High-risk category exposure <span class="mode">+ block</span></td><td>Exposure to addresses labelled mixer, darknet market, ransomware, scam</td><td><span class="tag sev-high">high</span></td><td>FATF RFI; EBA GL 21</td></tr>
+            <tr><td class="id">R04</td><td>CoinJoin participation <span class="mode">+ block</span></td><td>Equal-output CoinJoins and Whirlpool 5×5 mixes</td><td><span class="tag sev-medium">medium</span></td><td>FATF RFI; EBA GL 21</td></tr>
+            <tr><td class="id">R05</td><td>Peel chain</td><td>Small amounts peeled off along a chain, the rest forwarded</td><td><span class="tag sev-medium">medium</span></td><td>FATF RFI</td></tr>
+            <tr><td class="id">R06</td><td>Structuring</td><td>Repeated amounts just below 1,000 / 10,000 EUR in a short window</td><td><span class="tag sev-high">high</span></td><td>FATF RFI; TFR</td></tr>
+            <tr><td class="id">R07</td><td>Pass-through</td><td>Funds received and sent on within hours, balance back near zero</td><td><span class="tag sev-medium">medium</span></td><td>FATF RFI</td></tr>
+            <tr><td class="id">R08</td><td>Fan-in</td><td>Many distinct senders in a short window</td><td><span class="tag sev-medium">medium</span></td><td>FATF RFI</td></tr>
+            <tr><td class="id">R09</td><td>Fan-out <span class="mode">+ block</span></td><td>Many distinct recipients in a short window</td><td><span class="tag sev-medium">medium</span></td><td>FATF RFI</td></tr>
+            <tr><td class="id">R10</td><td>High velocity</td><td>Transactions per day above threshold</td><td><span class="tag sev-low">low</span></td><td>FATF RFI</td></tr>
+            <tr><td class="id">R11</td><td>Dormant reactivation</td><td>Significant movement after a long inactivity</td><td><span class="tag sev-medium">medium</span></td><td>FATF RFI</td></tr>
+            <tr><td class="id">R12</td><td>New address, high volume</td><td>Large value in the first transactions of a new address</td><td><span class="tag sev-medium">medium</span></td><td>FATF RFI</td></tr>
+            <tr><td class="id">R13</td><td>Round amounts</td><td>Repeated exact multiples of 0.1 / 1 BTC</td><td><span class="tag sev-low">low</span></td><td>FATF RFI</td></tr>
+            <tr><td class="id">R14</td><td>Large transaction <span class="mode">+ block</span></td><td>Single transfer above 100,000 EUR (2 BTC without a price)</td><td><span class="tag sev-medium">medium</span></td><td>FATF RFI; EBA GL 21</td></tr>
+            <tr><td class="id">R15</td><td>Dust</td><td>Tiny unsolicited amounts from many sources</td><td><span class="tag sev-low">low</span></td><td>FATF RFI</td></tr>
+            <tr><td class="id">R16</td><td>Consolidation <span class="mode">+ block</span></td><td>Many small inputs merged into one transaction</td><td><span class="tag sev-low">low</span></td><td>FATF RFI</td></tr>
+            <tr><td class="id">R17</td><td>Address hopping</td><td>Funds moved quickly through fresh single-use addresses</td><td><span class="tag sev-medium">medium</span></td><td>FATF RFI</td></tr>
+            <tr><td class="id">R18</td><td>Post-CoinJoin consolidation</td><td>Several CoinJoin outputs merged in one transaction</td><td><span class="tag sev-medium">medium</span></td><td>FATF RFI</td></tr>
+            <tr><td class="id">R19</td><td>Co-spending with flagged address <span class="mode">+ block</span></td><td>Inputs signed together with a sanctioned or high-risk address</td><td><span class="tag sev-high">high</span></td><td>OFAC SDN; FATF RFI</td></tr>
+            <tr><td class="id">R20</td><td>Round-trip</td><td>Funds returning to the address or its cluster within N hops</td><td><span class="tag sev-medium">medium</span></td><td>FATF RFI</td></tr>
+            <tr><td class="id">R21</td><td>Anomalous fee <span class="mode">+ block</span></td><td>Fee rate far above the block median (urgency)</td><td><span class="tag sev-low">low</span></td><td>FATF RFI</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="sub" style="margin-top:14px;font-size:14px">FATF RFI = FATF (2020) Red Flag Indicators of ML/TF – Virtual Assets.
+        EBA GL 21 = EBA ML/TF Risk Factors Guidelines, Guideline 21 (CASPs). TFR = Regulation (EU) 2023/1113.
+        References are given at section level and should be verified against the official texts.</p>
+    </div>
+  </section>
+
+  <section id="example">
+    <div class="wrap">
+      <h2>Real output</h2>
+      <p class="sub">Block 733459 (25 April 2022, 1,189 transactions). Two OFAC-listed addresses spend in this
+        block, each swept together with dozens or hundreds of other addresses: the pattern of an exchange
+        collecting customer deposits. The tool says so instead of tainting every co-spender.</p>
+<pre class="term"><span class="c">$ btc-aml scan-blocks 733459</span>
+[block 733459] 1189 transactions
+
+      2  R01_OFAC_DIRECT
+      1  R04_COINJOIN
+     60  R09_FAN_OUT
+    106  R14_LARGE_TRANSACTION
+     87  R16_CONSOLIDATION
+      2  R19_CO_SPENDING_FLAGGED
+<span class="r">  [SEVERE] R01_OFAC_DIRECT: 3HqA7i3ttECLvgqvq69HNxxUP5BL7Z5YgA ([OFAC SDN] sanctioned:
+  Alex Adrianus Martinus PEIJNENBURG (SDN uid 39585; programs: ILLICIT-DRUGS-EO14059))
+  sends 0.12818828 BTC (4,765 EUR) in this transaction.</span>
+<span class="y">  [HIGH] R19_CO_SPENDING_FLAGGED: 59 address(es) are clustered with 3HqA7i3t... by the
+  common-input-ownership and change heuristics in this block: probably the same wallet.
+  Cluster larger than 50 addresses: typical of a custodial service sweeping customer
+  deposits, in which case the flagged address is a customer deposit and the service is
+  the counterparty to contact.</span>
+
+Addresses for review: 2 (+474 large-cluster members, commented out)</pre>
+    </div>
+  </section>
+
+  <section id="limits">
+    <div class="wrap">
+      <h2>Known limitations</h2>
+      <p class="sub">What commercial platforms such as Chainalysis, Elliptic or TRM Labs do that this project
+        does not, stated up front.</p>
+      <ul class="limits">
+        <li><b>Attribution</b>Their core asset is millions of proprietary address labels. Here attribution is
+          limited to the OFAC list and the labels you import: an unlisted illicit service scores Low.</li>
+        <li><b>Heuristics produce false positives</b>Clustering breaks with PayJoin and merges swept exchange
+          deposits; fan-in, fan-out and consolidation are everyday exchange activity. Alerts are leads, not conclusions.</li>
+        <li><b>Bounded coverage</b>At most 200 transactions per address, 20 counterparties per hop, 3 hops,
+          10 minutes per address and 10 blocks per scan. Reports state when a limit was hit.</li>
+        <li><b>Bitcoin on-chain only</b>No other chains, Lightning, bridges, off-chain exchange data or Travel
+          Rule messages.</li>
+        <li><b>Public APIs</b>Free, rate-limited and without service levels: about a minute per full block,
+          a few minutes per address with multi-hop exposure.</li>
+        <li><b>Not a validated system</b>Weights and thresholds are illustrative, not calibrated on real data.
+          No model validation, case management or four-eyes workflow.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="disclaimer"><b>Disclaimer.</b> Educational project. It is not a validated compliance solution and
+      must not be used as the sole basis for any compliance decision. It uses only public data and contains no
+      non-public information from any professional activity.</div>
+    <p>© 2026 Edoardo Daprato · MIT License ·
+      <a href="https://github.com/edoardodaprato/btc-aml-monitor">Source code</a> ·
+      <a href="https://github.com/edoardodaprato/btc-aml-monitor/blob/main/CHANGELOG.md">Changelog</a> ·
+      <a href="https://github.com/edoardodaprato/btc-aml-monitor/releases">Releases</a></p>
+  </div>
+</footer>
+
+</body>
+</html>

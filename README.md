@@ -6,6 +6,8 @@
 
 **Retrospective Bitcoin transaction monitoring for AML compliance**, built on free public data only.
 
+🌐 **Project website: [edoardodaprato.github.io/btc-aml-monitor](https://edoardodaprato.github.io/btc-aml-monitor/)**
+
 The tool screens Bitcoin addresses and block ranges against the OFAC SDN list and a set of
 red-flag rules derived from the FATF *Red Flag Indicators of ML/TF on Virtual Assets* (2020)
 and the EBA ML/TF Risk Factors Guidelines for crypto-asset service providers. Every alert is
