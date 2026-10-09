@@ -83,8 +83,8 @@ def profile(address: str, txs: list[Transaction], truncated: bool = False) -> Ad
     )
 
 
-def screener(sanctioned: tuple[str, ...] = (), labels: dict[str, str] | None = None) -> Screener:
-    ofac = OfacList(
+def ofac_list(sanctioned: tuple[str, ...] = ()) -> OfacList:
+    return OfacList(
         publish_date="2026-01-01",
         downloaded_at="2026-01-01T00:00:00+00:00",
         source_url="test",
@@ -94,11 +94,14 @@ def screener(sanctioned: tuple[str, ...] = (), labels: dict[str, str] | None = N
             a: (SanctionedAddress(a, "1", "TEST ENTITY", ("TEST-PROGRAM",)),) for a in sanctioned
         },
     )
+
+
+def screener(sanctioned: tuple[str, ...] = (), labels: dict[str, str] | None = None) -> Screener:
     label_list = [
         Label(address, category, "test fixture", "2026-01-01")
         for address, category in (labels or {}).items()
     ]
-    return Screener(ofac, label_list)
+    return Screener(ofac_list(sanctioned), label_list)
 
 
 class FakeChain:

@@ -20,7 +20,7 @@ from btc_aml.data_sources.price import PriceQuote
 from btc_aml.model import sats_to_btc
 from btc_aml.rules.base import fmt_time
 from btc_aml.rules.registry import build_rules
-from btc_aml.runner import run_address_mode
+from btc_aml.runner import BlockRangeError, run_address_mode, run_block_mode
 from btc_aml.screening import Screener
 from btc_aml.services import Services
 
@@ -217,6 +217,66 @@ def scan_addresses(
     for item, reason in result.skipped.items():
         typer.secho(f"  skipped {item}: {reason}", fg=typer.colors.YELLOW)
     typer.echo(f"\nReports and audit log: {result.output_dir}")
+
+
+@app.command("scan-blocks")
+def scan_blocks(
+    start: Annotated[int, typer.Argument(help="First block height to scan.")],
+    end: Annotated[
+        int | None, typer.Argument(help="Last block height (inclusive); default: same as start.")
+    ] = None,
+    config_dir: ConfigDirOption = Path("config"),
+) -> None:
+    """Check every transaction of a block range for red flags and write the reports."""
+    config = _load_config_or_exit(config_dir)
+    try:
+        ofac = load_ofac_list(config.ofac_local_path)
+        labels = read_labels(config.labels_path)
+    except (OfacError, LabelError) as exc:
+        _fail(str(exc))
+
+    with Services.from_config(config) as services:
+        try:
+            result = run_block_mode(
+                start,
+                end if end is not None else start,
+                config,
+                services,
+                ofac,
+                labels,
+                progress=typer.echo,
+            )
+        except (BlockRangeError, DataSourceError) as exc:
+            _fail(str(exc))
+        requests = dict(services.http.requests_by_source) or "none (cache)"
+
+    findings = [f for report in result.reports for f in report.findings]
+    txs = sum(len(report.txs) for report in result.reports)
+    typer.echo(f"\nRun {result.run_id}: {len(result.reports)} block(s), {txs} transactions")
+    counts: dict[str, int] = {}
+    for finding in findings:
+        counts[finding.rule_id] = counts.get(finding.rule_id, 0) + 1
+    for rule_id, count in sorted(counts.items()):
+        typer.echo(f"  {count:>5}  {rule_id}")
+    if not findings:
+        typer.echo("  no alerts")
+    for finding in findings:
+        if finding.severity in ("severe", "high"):
+            typer.secho(
+                f"  [{finding.severity.upper()}] block {finding.block_height} "
+                f"{finding.rule_id}: {finding.explanation}",
+                fg=typer.colors.RED,
+            )
+    for height, reason in result.skipped.items():
+        typer.secho(f"  skipped block {height}: {reason}", fg=typer.colors.YELLOW)
+    review = {a for report in result.reports for a in report.addresses_for_review}
+    large = {a for report in result.reports for a in report.large_cluster_addresses} - review
+    typer.echo(
+        f"\nAddresses for review: {len(review)}"
+        + (f" (+{len(large)} large-cluster members, commented out)" if large else "")
+    )
+    typer.echo(f"API requests: {requests}")
+    typer.echo(f"Reports and audit log: {result.output_dir}")
 
 
 def _print_analysis(analysis: AddressAnalysis) -> None:

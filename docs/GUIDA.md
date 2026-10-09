@@ -219,7 +219,54 @@ servizio custodial (per esempio indirizzi di deposito di un exchange raccolti in
 dell'indirizzo di input, stesso tipo di script degli input, importo non tondo quando il
 pagamento è tondo. Se il caso è ambiguo, nessun output viene considerato resto.
 
-## 8. Comandi disponibili
+## 8. Scansione di blocchi
+
+La modalità indirizzi parte da indirizzi che già ti interessano. La **scansione di
+blocchi** parte invece dalla blockchain: legge tutte le transazioni di uno o più blocchi
+(al massimo 10, `block_scan.max_blocks` in `settings.yaml`) e segnala quelle che, da sole,
+mostrano un red flag.
+
+```bash
+btc-aml scan-blocks 733459            # un solo blocco
+btc-aml scan-blocks 733459 733461     # dal blocco 733459 al 733461 compresi
+```
+
+Il numero è l'**altezza** del blocco, cioè la sua posizione nella catena (il primo blocco
+è 0). Un blocco pieno contiene 2.000-5.000 transazioni e la prima lettura richiede circa
+un minuto per blocco: le API pubbliche restituiscono 25 transazioni per volta. Le
+letture successive usano la cache e sono immediate.
+
+**Quali regole.** Solo quelle che hanno senso su una singola transazione: indirizzi
+sanzionati (R01) o etichettati (R03), CoinJoin (R04), pagamenti a molti destinatari
+(R09), trasferimenti sopra soglia escluso il resto (R14), consolidamento di tanti piccoli
+input (R16) e commissioni anomale rispetto alla mediana del blocco (R21). Le soglie sono
+le stesse di `rules.yaml`. Le regole che richiedono lo storico di un indirizzo
+(structuring, velocità, dormienza...) restano della modalità indirizzi.
+
+**Cluster sul blocco (R19).** Gli indirizzi che spendono insieme a un indirizzo
+sanzionato o etichettato, anche in transazioni diverse dello stesso blocco, vengono
+segnalati come probabile stesso portafoglio. **Se il cluster supera i 50 indirizzi** la
+spiegazione avverte che si tratta tipicamente di un servizio custodial (un exchange che
+raccoglie i depositi dei clienti). In quel caso l'indirizzo sanzionato è probabilmente un
+deposito di un cliente, e l'interlocutore è l'exchange.
+
+**File prodotti** in `output/<run_id>/`:
+
+| File | Contenuto |
+|---|---|
+| `blocks.csv` | Una riga per blocco: hash, data, numero di transazioni, commissione mediana, prezzo BTC/EUR usato, numero di alert |
+| `block_alerts.csv` | Un alert per riga: regola, gravità, transazioni, indirizzi coinvolti, importo in BTC ed EUR, spiegazione, riferimento normativo |
+| `addresses_for_review.txt` | Indirizzi sanzionati o etichettati e i loro co-firmatari, pronti per `btc-aml scan-addresses`. I membri dei cluster grandi sono presenti ma commentati con `#` |
+| `audit_log.json`, `run.log` | Tracciabilità, come nella modalità indirizzi |
+
+**Esempio reale.** Nel blocco 733459 (aprile 2022) la scansione trova due indirizzi
+della lista OFAC che spendono fondi, ciascuno insieme a decine o centinaia di altri
+indirizzi: è il comportamento tipico di un exchange che raccoglie i depositi. Gli altri
+alert del blocco (grandi trasferimenti, pagamenti multipli, consolidamenti) sono in gran
+parte attività normale di exchange e pool di mining: in un blocco qualsiasi sono
+decine, e vanno letti come elenco di cose da guardare, non come sospetti accertati.
+
+## 9. Comandi disponibili
 
 | Comando | Cosa fa |
 |---|---|
@@ -230,4 +277,6 @@ pagamento è tondo. Se il caso è ambiguo, nessun output viene considerato resto
 | `btc-aml import-labels <file.csv>` | Importa etichette da un CSV |
 | `btc-aml screen <indirizzo> ...` | Controlla uno o più indirizzi contro OFAC ed etichette |
 | `btc-aml analyze <indirizzo>` | Analizza un indirizzo con tutte le regole |
+| `btc-aml scan-addresses <file>` | Analizza tutti gli indirizzi di un file e scrive i report |
+| `btc-aml scan-blocks <inizio> [fine]` | Controlla tutte le transazioni di un intervallo di blocchi |
 | `btc-aml cache-stats` | Mostra quanti dati sono salvati nella cache locale |

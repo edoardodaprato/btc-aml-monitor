@@ -1,4 +1,7 @@
-"""CSV reports: address_scores.csv, alerts.csv, transactions.csv.
+"""CSV reports.
+
+Address mode: address_scores.csv, alerts.csv, transactions.csv.
+Block-scan mode: blocks.csv, block_alerts.csv and addresses_for_review.txt.
 
 Amounts are written as plain decimals (BTC with 8 decimals, EUR with 2) so the files
 open cleanly in any spreadsheet. An empty EUR cell means "price unavailable".
@@ -12,6 +15,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from btc_aml.analysis import AddressAnalysis
+from btc_aml.block_scan import MAX_LISTED_ADDRESSES, BlockReport
 from btc_aml.config import CoinJoinConfig
 from btc_aml.heuristics import detect_coinjoin
 from btc_aml.model import sats_to_btc
@@ -66,6 +70,32 @@ TRANSACTIONS_COLUMNS = (
     "output_count",
     "is_coinjoin",
 )
+BLOCKS_COLUMNS = (
+    "block_height",
+    "block_hash",
+    "block_time",
+    "tx_count",
+    "median_fee_rate_sat_vb",
+    "btc_eur_price",
+    "btc_eur_price_date",
+    "btc_eur_price_source",
+    "alerts",
+)
+BLOCK_ALERTS_COLUMNS = (
+    "alert_id",
+    "block_height",
+    "block_time",
+    "rule_id",
+    "rule_name",
+    "severity",
+    "evidence_txids",
+    "addresses",
+    "address_count",
+    "amount_btc",
+    "amount_eur",
+    "explanation",
+    "regulatory_reference",
+)
 
 
 def write_reports(
@@ -86,6 +116,75 @@ def write_reports(
     _write(paths["alerts"], ALERTS_COLUMNS, _alert_rows(analyses, run_id))
     _write(paths["transactions"], TRANSACTIONS_COLUMNS, _transaction_rows(analyses, coinjoin))
     return paths
+
+
+def write_block_reports(
+    reports: list[BlockReport], output_dir: Path, run_id: str
+) -> dict[str, Path]:
+    """Write the block-scan files and return their paths by name."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    paths = {
+        "blocks": output_dir / "blocks.csv",
+        "block_alerts": output_dir / "block_alerts.csv",
+        "addresses_for_review": output_dir / "addresses_for_review.txt",
+    }
+    _write(paths["blocks"], BLOCKS_COLUMNS, _block_rows(reports))
+    _write(paths["block_alerts"], BLOCK_ALERTS_COLUMNS, _block_alert_rows(reports, run_id))
+    review = {a for report in reports for a in report.addresses_for_review}
+    large = {a for report in reports for a in report.large_cluster_addresses} - review
+    text = (
+        f"# Run {run_id}: addresses that are listed, or clustered with a listed address.\n"
+        "# Analyse them in full with: btc-aml scan-addresses <this file>\n"
+        + "".join(f"{a}\n" for a in sorted(review))
+    )
+    if large:
+        text += (
+            f"\n# {len(large)} members of large clusters (likely a custodial service), commented\n"
+            "# out to keep the run short. Remove the leading '# ' to include an address.\n"
+            + "".join(f"# {a}\n" for a in sorted(large))
+        )
+    paths["addresses_for_review"].write_text(text)
+    return paths
+
+
+def _block_rows(reports: list[BlockReport]) -> Iterable[tuple]:
+    for report in reports:
+        block, price = report.block, report.block.price
+        yield (
+            block.height,
+            block.block_hash,
+            _iso(block.timestamp),
+            block.tx_count,
+            "" if block.median_fee_rate is None else f"{block.median_fee_rate:.2f}",
+            "" if price is None else f"{price.eur:.2f}",
+            "" if price is None else price.as_of,
+            "" if price is None else price.source,
+            len(report.findings),
+        )
+
+
+def _block_alert_rows(reports: list[BlockReport], run_id: str) -> Iterable[tuple]:
+    counter = 0
+    for report in reports:
+        for finding in report.findings:
+            counter += 1
+            listed = finding.addresses[:MAX_LISTED_ADDRESSES]
+            more = len(finding.addresses) - len(listed)
+            yield (
+                f"{run_id}-B{counter:05d}",
+                finding.block_height,
+                _iso(finding.block_time),
+                finding.rule_id,
+                finding.rule_name,
+                finding.severity,
+                ";".join(finding.txids),
+                ";".join(listed) + (f";(+{more} more)" if more else ""),
+                len(finding.addresses),
+                _btc(finding.amount_sats),
+                _eur(finding.amount_eur),
+                finding.explanation,
+                finding.regulatory_reference,
+            )
 
 
 def _score_rows(analyses: list[AddressAnalysis], analysis_date: str) -> Iterable[tuple]:

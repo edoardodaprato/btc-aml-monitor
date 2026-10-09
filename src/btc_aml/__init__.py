@@ -1,3 +1,3 @@
 """btc-aml-monitor: retrospective Bitcoin transaction monitoring for AML compliance."""
 
-__version__ = "0.9.0"
+__version__ = "0.10.0"

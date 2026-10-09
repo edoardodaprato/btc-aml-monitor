@@ -12,7 +12,7 @@ and the EBA ML/TF Risk Factors Guidelines for crypto-asset service providers. Ev
 explainable: it carries the rule that fired, its regulatory reference, the score contribution
 and the transaction-level evidence.
 
-> ⚠️ **Status: work in progress (v0.9.0 — multi-hop exposure).** See the [CHANGELOG](CHANGELOG.md)
+> ⚠️ **Status: work in progress (v0.10.0 — block scanning).** See the [CHANGELOG](CHANGELOG.md)
 > and the roadmap below.
 
 ## The problem
@@ -36,7 +36,19 @@ btc-aml update-fx      # ECB EUR/USD rates, fill EUR price gaps
 btc-aml screen 12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL
 btc-aml analyze 12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL
 btc-aml scan-addresses examples/demo_addresses.txt   # CSV reports + audit log in output/
+btc-aml scan-blocks 733459                           # every transaction of a block
 ```
+
+### Two modes
+
+- **Address mode** (`scan-addresses`) starts from addresses you already care about
+  (customers, counterparties) and scores each one 0–100 on its full history, with
+  multi-hop exposure.
+- **Block-scan mode** (`scan-blocks`) starts from the blockchain: it checks every
+  transaction of up to 10 blocks with the rules that make sense on a single transaction
+  (R01, R03, R04, R09, R14, R16, R19, R21) and clusters addresses across the block. It
+  writes `blocks.csv`, `block_alerts.csv` and `addresses_for_review.txt`, a list of
+  sanctioned or labelled addresses and their co-spenders ready for address mode.
 
 A beginner's guide in Italian is available in [docs/GUIDA.md](docs/GUIDA.md).
 
@@ -85,7 +97,8 @@ are given at section level and should be verified against the official texts.*
 - [x] Explainable risk scoring (0–100, with sanctions override)
 - [x] CSV reports and audit log
 - [x] Multi-hop exposure, clustering and change detection
-- [ ] Block-range scanning
+- [x] Block-range scanning
+- [ ] Portfolio polish: example outputs, architecture diagram, known limitations, v1.0.0
 
 ## Disclaimer
 

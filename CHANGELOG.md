@@ -5,6 +5,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-10
+
+### Added
+- Block-scan mode: `scan-blocks <start> [end]` checks every transaction of a block range (at most `block_scan.max_blocks`, default 10). Blocks are read page by page (25 transactions per request) and cached.
+- Single-transaction checks reusing the thresholds of `rules.yaml`: sanctioned (R01) or labelled (R03) addresses, CoinJoin (R04), fan-out (R09), large transfers excluding change (R14), consolidation (R16), anomalous fee against the block median (R21).
+- Common-input and change clustering across the whole block (R19): addresses linked to a listed address are reported; clusters above 50 addresses are marked as a likely custodial service.
+- Reports: `blocks.csv`, `block_alerts.csv`, `addresses_for_review.txt` (ready for `scan-addresses`; large-cluster members commented out) and an audit log with mode `blocks`.
+
 ## [0.9.0] - 2026-10-06
 
 ### Added

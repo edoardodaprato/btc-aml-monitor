@@ -18,6 +18,7 @@ from typing import Any
 
 from btc_aml import __version__
 from btc_aml.analysis import AddressAnalysis
+from btc_aml.block_scan import BlockReport
 from btc_aml.config import AppConfig
 from btc_aml.data_sources.ecb import EcbRates
 from btc_aml.data_sources.ofac import OfacList
@@ -45,6 +46,96 @@ def build_audit_log(
     requests_by_source: dict[str, int],
     report_files: dict[str, Path],
 ) -> dict[str, Any]:
+    results = {
+        "addresses_analysed": len(analyses),
+        "addresses_skipped": skipped,
+        "risk_bands": dict(Counter(a.score.band for a in analyses)),
+        "alerts": sum(len(a.alerts) for a in analyses),
+        "truncated_histories": [a.profile.address for a in analyses if a.profile.truncated],
+        "rules_not_evaluated": {
+            a.profile.address: a.rule_errors for a in analyses if a.rule_errors
+        },
+        "incomplete_exposure": {
+            a.profile.address: a.exposure.notes
+            for a in analyses
+            if a.exposure is not None and not a.exposure.complete
+        },
+    }
+    return _audit_document(
+        run_id=run_id,
+        mode=mode,
+        started_at=started_at,
+        finished_at=finished_at,
+        config=config,
+        ofac=ofac,
+        fx=fx,
+        label_count=label_count,
+        input_info=input_info,
+        results=results,
+        requests_by_source=requests_by_source,
+        report_files=report_files,
+    )
+
+
+def build_block_audit_log(
+    *,
+    run_id: str,
+    started_at: str,
+    finished_at: str,
+    config: AppConfig,
+    ofac: OfacList,
+    fx: EcbRates | None,
+    label_count: int,
+    input_info: dict[str, Any],
+    reports: list[BlockReport],
+    rules_applied: list[str],
+    skipped: dict[str, str],
+    requests_by_source: dict[str, int],
+    report_files: dict[str, Path],
+) -> dict[str, Any]:
+    results = {
+        "blocks_scanned": [report.block.height for report in reports],
+        "blocks_skipped": skipped,
+        "transactions_scanned": sum(len(report.txs) for report in reports),
+        "alerts_by_rule": dict(Counter(f.rule_id for r in reports for f in r.findings)),
+        "addresses_for_review": len({a for r in reports for a in r.addresses_for_review}),
+        "rules_applied": rules_applied,
+        "blocks_without_fee_statistics": [
+            r.block.height for r in reports if r.block.median_fee_rate is None
+        ],
+        "blocks_without_eur_price": [r.block.height for r in reports if r.block.price is None],
+    }
+    return _audit_document(
+        run_id=run_id,
+        mode="blocks",
+        started_at=started_at,
+        finished_at=finished_at,
+        config=config,
+        ofac=ofac,
+        fx=fx,
+        label_count=label_count,
+        input_info=input_info,
+        results=results,
+        requests_by_source=requests_by_source,
+        report_files=report_files,
+    )
+
+
+def _audit_document(
+    *,
+    run_id: str,
+    mode: str,
+    started_at: str,
+    finished_at: str,
+    config: AppConfig,
+    ofac: OfacList,
+    fx: EcbRates | None,
+    label_count: int,
+    input_info: dict[str, Any],
+    results: dict[str, Any],
+    requests_by_source: dict[str, int],
+    report_files: dict[str, Path],
+) -> dict[str, Any]:
     return {
         "run_id": run_id,
         "mode": mode,
@@ -52,21 +143,7 @@ def build_audit_log(
         "started_at": started_at,
         "finished_at": finished_at,
         "input": input_info,
-        "results": {
-            "addresses_analysed": len(analyses),
-            "addresses_skipped": skipped,
-            "risk_bands": dict(Counter(a.score.band for a in analyses)),
-            "alerts": sum(len(a.alerts) for a in analyses),
-            "truncated_histories": [a.profile.address for a in analyses if a.profile.truncated],
-            "rules_not_evaluated": {
-                a.profile.address: a.rule_errors for a in analyses if a.rule_errors
-            },
-            "incomplete_exposure": {
-                a.profile.address: a.exposure.notes
-                for a in analyses
-                if a.exposure is not None and not a.exposure.complete
-            },
-        },
+        "results": results,
         "rules": {
             "rules_version": config.rules_version,
             "config_hash": config.config_hash,
@@ -94,6 +171,7 @@ def build_audit_log(
             "coinjoin": asdict(config.coinjoin),
             "scoring": asdict(config.scoring),
             "address_ttl_hours": config.cache.address_ttl_hours,
+            "max_blocks": config.max_blocks,
         },
         "data_sources_used": requests_by_source,
         "report_files": {name: path.name for name, path in report_files.items()},
