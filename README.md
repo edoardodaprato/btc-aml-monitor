@@ -70,7 +70,7 @@ btc-aml scan-blocks 733459                           # every transaction of a bl
   writes `blocks.csv`, `block_alerts.csv` and `addresses_for_review.txt`, a list of
   sanctioned or labelled addresses and their co-spenders ready for address mode.
 
-A beginner's guide in Italian is available in [docs/GUIDA.md](docs/GUIDA.md).
+A step-by-step user guide is available in [docs/GUIDE.md](docs/GUIDE.md).
 
 ## Example output
 
