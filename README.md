@@ -14,8 +14,8 @@ and the EBA ML/TF Risk Factors Guidelines for crypto-asset service providers. Ev
 explainable: it carries the rule that fired, its regulatory reference, the score contribution
 and the transaction-level evidence.
 
-> **Status: v1.0.0.** Feature-complete for its scope: address mode, block-scan mode, 21 rules,
-> explainable scoring, CSV reports and audit trail. See the [CHANGELOG](CHANGELOG.md).
+> **Status: v1.1.0.** Address mode, block-scan mode, 21 rules, explainable scoring, CSV reports,
+> audit trail and a local control panel with manual alert review. See the [CHANGELOG](CHANGELOG.md).
 
 ## The problem
 
@@ -60,6 +60,18 @@ btc-aml analyze 12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL
 btc-aml scan-addresses examples/demo_addresses.txt   # CSV reports + audit log in output/
 btc-aml scan-blocks 733459                           # every transaction of a block
 ```
+
+### Control panel
+
+```bash
+btc-aml ui        # or double-click start-control-panel.command on macOS
+```
+
+A local web page (reachable only from your computer) to run analyses without the
+terminal, update the OFAC list, browse past runs, read the audit trail, and **record a
+manual review of every alert**: decision (escalate / false positive / no action), note and
+reviewer, saved as `review.csv` next to the untouched automated reports. Evidence links open
+each transaction on a public block explorer for independent verification.
 
 ### Two modes
 
@@ -172,6 +184,7 @@ flowchart TD
 | [`src/btc_aml/scoring`](src/btc_aml/scoring) | Risk score and bands |
 | [`src/btc_aml/block_scan.py`](src/btc_aml/block_scan.py) | Single-transaction checks for block-scan mode |
 | [`src/btc_aml/reports`](src/btc_aml/reports) | CSV export and audit log |
+| [`src/btc_aml/web`](src/btc_aml/web) | Local control panel: runs, results, manual review |
 | [`config`](config) | `settings.yaml` (sources, limits, bands) and `rules.yaml` (rules) |
 | [`tests`](tests) | Offline tests with recorded API responses |
 
@@ -244,8 +257,9 @@ this project in ways that matter for a real compliance decision:
   protocols or flag batch payouts with equal amounts.
 - **Regulatory references** are at section level and should be verified against the
   official texts; weights and thresholds are illustrative, not calibrated on real data.
-- **Not a validated system**: no model validation, no case management, no four-eyes
-  workflow, no alert tuning on a real customer base.
+- **Not a validated system**: no model validation, no alert tuning on a real customer base.
+  The control panel records one reviewer's decision per alert; it is not a case-management
+  system (no assignment, approval workflow or user accounts).
 
 ## Development
 

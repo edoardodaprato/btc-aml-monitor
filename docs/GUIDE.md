@@ -1,6 +1,6 @@
 # btc-aml-monitor user guide
 
-A step-by-step guide for readers starting from scratch. It describes version 1.0.0.
+A step-by-step guide for readers starting from scratch. It describes version 1.1.0.
 
 ## 1. Installation
 
@@ -28,7 +28,49 @@ btc-aml show-config
 pytest
 ```
 
-## 2. Configuration
+## 2. The control panel (no terminal needed)
+
+After the installation, everything can be done from a page in your browser.
+
+**Start it.** In Finder, open the project folder and double-click
+`start-control-panel.command`. (The first time, macOS may ask for confirmation: right-click
+the file, choose *Open*, then *Open* again.) A terminal window opens and the control panel
+appears in your browser at `http://127.0.0.1:8765/`. Keep the terminal window open while you
+work; close it (or press Ctrl+C in it) to stop the panel. From a terminal, the same is
+`btc-aml ui`.
+
+The panel is reachable **only from your computer**: nothing is published online.
+
+**What you can do:**
+
+| Section | What it does |
+|---|---|
+| 1 · Analyse addresses | Paste addresses (one per line) and start an address-mode analysis. A progress page follows the run; when it is done, *Open the results*. |
+| 2 · Scan blocks | Enter a block height (and optionally a last one) to scan up to 10 blocks. |
+| 3 · Check one transaction | Paste a txid for a quick check of that transaction alone (not saved). |
+| Reference data | Update the OFAC list and the ECB rates with one click; see how many labels you have and which configuration is in use. |
+| Past runs | Every analysis ever run, with the number of alerts and how many you have reviewed. |
+
+**Reading a run.** The results page shows the score of each address with the reasons, every
+alert with its explanation, amount and regulatory reference, and warnings when a limit was
+hit (⚠). At the bottom, the **Audit trail** shows when the run was made, with which tool
+version, rules and thresholds, OFAC list version and data sources, plus the full
+`audit_log.json`. Every report file can be downloaded from the top of the page.
+
+**Manual review.** Under each alert:
+
+1. Open the **evidence links**: they show the transactions on mempool.space, a public block
+   explorer, so you can check amounts, dates and addresses independently of the tool.
+2. Choose a **decision**: *Escalate (possible suspicious activity)*, *False positive* or
+   *Explained, no action*.
+3. Write a **note** with your reasoning (documents checked, customer explanation...) and
+   your name or initials as **reviewer**, then *Save*.
+
+Decisions are stored in the run folder as `review.json` and exported as `review.csv` (one
+row per alert, with decision, note, reviewer and time). The automated reports are never
+changed, so the tool's output and the human decision stay separate, as an auditor expects.
+
+## 3. Configuration
 
 All thresholds, weights and limits live in two text files that can be changed without
 touching the code:
@@ -43,7 +85,7 @@ stops with a clear message instead of producing wrong scores. `btc-aml show-conf
 the configuration in use and its **hash**, the fingerprint recorded in the audit log of
 every analysis.
 
-## 3. OFAC sanctions list
+## 4. OFAC sanctions list
 
 ```bash
 btc-aml update-ofac
@@ -59,7 +101,7 @@ Run it regularly (for example weekly), because OFAC updates the list often.
 > Note: the same address can be attributed to several persons or entities. The tool keeps
 > all of them, because every designation matters for reporting.
 
-## 4. Address labels
+## 5. Address labels
 
 The file `data/labels.csv` holds your own attributions: address → category. Start from the
 empty template `data/labels_template.csv`:
@@ -105,7 +147,7 @@ auditor or a supervisor.
 OFAC addresses must **not** be copied into the labels file: `btc-aml update-ofac` already
 handles them.
 
-## 5. Analysing an address
+## 6. Analysing an address
 
 ```bash
 btc-aml analyze <address>
@@ -152,7 +194,7 @@ rates with `btc-aml update-fx`, the tool converts the USD price at that day's EC
 rate. The `btc_eur_price_source` column always states which source was used. When no price
 is available, the EUR cell is left empty.
 
-## 6. The rules in plain words
+## 7. The rules in plain words
 
 | ID | Rule | What it means | Why it is a red flag |
 |---|---|---|---|
@@ -186,7 +228,7 @@ read in the context of the customer and the address.
 equivalent BTC threshold and say so in the explanation. Structuring (R06) is evaluated only
 on transactions with a known price, because its thresholds only make sense in EUR.
 
-## 7. Multi-hop analysis, clusters and change
+## 8. Multi-hop analysis, clusters and change
 
 **Multi-hop exposure.** The tool follows funds beyond direct counterparties, in both
 directions: where the money received came from (source of funds) and where the money sent
@@ -215,7 +257,7 @@ deposit addresses swept together).
 same script type as the inputs, non-round amount when the payment is round. When the case
 is ambiguous, no output is treated as change.
 
-## 8. Block scan
+## 9. Block scan
 
 Address mode starts from addresses you already care about. **Block scan** starts from the
 blockchain instead: it reads every transaction of one or more blocks (at most 10,
@@ -260,7 +302,7 @@ transfers, batch payments, consolidations) are mostly normal exchange and mining
 activity. Any block has dozens of them, and they should be read as a list of things to
 look at, not as established suspicions.
 
-## 9. Ready-made examples
+## 10. Ready-made examples
 
 The `examples/` folder contains the real results of two analyses, so you can look at the
 files without running anything:
@@ -275,7 +317,7 @@ next to an alert would read as an accusation, even though an alert is only a heu
 Transaction ids (txids) are kept, because they serve as evidence and anyone can check them
 on a block explorer.
 
-## 10. Limitations compared with commercial tools
+## 11. Limitations compared with commercial tools
 
 This project shows the logic of a transaction-monitoring system, but it does **not
 replace** tools such as Chainalysis, Elliptic or TRM Labs. The main differences:
@@ -303,7 +345,7 @@ replace** tools such as Chainalysis, Elliptic or TRM Labs. The main differences:
 - **Not a validated system.** There is no model validation, case management, four-eyes
   review or alert tuning on a real customer base.
 
-## 11. Available commands
+## 12. Available commands
 
 | Command | What it does |
 |---|---|
@@ -316,4 +358,5 @@ replace** tools such as Chainalysis, Elliptic or TRM Labs. The main differences:
 | `btc-aml analyze <address>` | Analyses one address with every rule |
 | `btc-aml scan-addresses <file>` | Analyses every address in a file and writes the reports |
 | `btc-aml scan-blocks <start> [end]` | Checks every transaction of a block range |
+| `btc-aml ui` | Opens the control panel in the browser |
 | `btc-aml cache-stats` | Shows how much data is stored in the local cache |

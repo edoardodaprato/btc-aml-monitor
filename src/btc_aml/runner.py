@@ -164,7 +164,7 @@ def run_block_mode(
         skipped: dict[str, str] = {}
         for height in range(start_height, end_height + 1):
             try:
-                block = _load_block(height, services)
+                block = load_block_info(height, services)
                 progress(f"[block {height}] {block.tx_count} transactions")
                 raw_txs = services.esplora.get_block_txs(block.block_hash, block.tx_count)
             except DataSourceError as exc:
@@ -200,7 +200,24 @@ def run_block_mode(
         log_handler.close()
 
 
-def _load_block(height: int, services: Services) -> BlockInfo:
+def check_transaction(
+    txid: str, config: AppConfig, services: Services, screener: Screener
+) -> BlockReport:
+    """Apply the block-scan checks to one confirmed transaction (no report is written).
+
+    A quick look for a reviewer who has a txid in hand; the full, recorded analysis of
+    the addresses involved is done with address mode.
+    """
+    raw = services.esplora.get_tx(txid)
+    status = raw.get("status", {})
+    if not status.get("confirmed"):
+        raise BlockRangeError(f"Transaction {txid} is not confirmed yet")
+    block = load_block_info(status["block_height"], services)
+    return BlockScanner(config, screener).scan(block, [raw])
+
+
+def load_block_info(height: int, services: Services) -> BlockInfo:
+    """Header data, median fee rate and BTC/EUR price of the block at ``height``."""
     esplora = services.esplora
     block_hash = esplora.get_block_hash(height)
     block = esplora.get_block(block_hash)

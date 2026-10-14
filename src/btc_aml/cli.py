@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import webbrowser
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any, NoReturn
@@ -23,6 +24,7 @@ from btc_aml.rules.registry import build_rules
 from btc_aml.runner import BlockRangeError, run_address_mode, run_block_mode
 from btc_aml.screening import Screener
 from btc_aml.services import Services
+from btc_aml.web.server import create_server
 
 SATS_PER_BTC = 100_000_000
 
@@ -277,6 +279,33 @@ def scan_blocks(
     )
     typer.echo(f"API requests: {requests}")
     typer.echo(f"Reports and audit log: {result.output_dir}")
+
+
+@app.command("ui")
+def ui(
+    port: Annotated[int, typer.Option(help="Local port of the control panel.")] = 8765,
+    open_browser: Annotated[
+        bool, typer.Option("--open-browser/--no-browser", help="Open the browser automatically.")
+    ] = True,
+    config_dir: ConfigDirOption = Path("config"),
+) -> None:
+    """Start the local control panel in the browser (stop it with Ctrl+C)."""
+    config = _load_config_or_exit(config_dir)
+    try:
+        server = create_server(config, port)
+    except OSError as exc:
+        _fail(f"Cannot start the control panel on port {port}: {exc}")
+    url = f"http://127.0.0.1:{server.server_address[1]}/"
+    typer.echo(f"Control panel running at {url}  (only reachable from this computer)")
+    typer.echo("Keep this window open while you use it. Press Ctrl+C to stop.")
+    if open_browser:
+        webbrowser.open(url)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        typer.echo("\nControl panel stopped.")
+    finally:
+        server.server_close()
 
 
 def _print_analysis(analysis: AddressAnalysis) -> None:

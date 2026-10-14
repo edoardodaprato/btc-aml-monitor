@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "btc-aml-monitor"
-version = "1.0.1"
+version = "1.1.0"
 description = "Retrospective Bitcoin transaction monitoring for AML compliance: OFAC screening, FATF red-flag rules, multi-hop exposure and explainable risk scoring."
 readme = "README.md"
 license = "MIT"
@@ -37,3 +37,6 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/btc_aml/web/render.py" = ["E501"]  # HTML templates read better unwrapped

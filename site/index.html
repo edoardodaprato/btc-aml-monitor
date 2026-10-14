@@ -167,7 +167,7 @@
     <a class="brand" href="#top">btc-aml<span>-monitor</span></a>
     <nav>
       <a href="#how">How it works</a>
-      <a href="#modes">Modes</a>
+      <a href="#modes">Modes &amp; panel</a>
       <a href="#scoring">Scoring</a>
       <a href="#rules">Rules</a>
       <a href="#example">Example</a>
@@ -192,7 +192,7 @@
     <div class="stats">
       <div class="stat"><b>21</b><span>red-flag rules (FATF, EBA, TFR)</span></div>
       <div class="stat"><b>532</b><span>OFAC-listed Bitcoin addresses screened</span></div>
-      <div class="stat"><b>149</b><span>offline tests, CI on every push</span></div>
+      <div class="stat"><b>161</b><span>offline tests, CI on every push</span></div>
       <div class="stat"><b>€0</b><span>no paid APIs, no node, runs on a laptop</span></div>
     </div>
   </div>
@@ -275,7 +275,7 @@
 
   <section id="modes">
     <div class="wrap">
-      <h2>Two modes</h2>
+      <h2>Two modes, one control panel</h2>
       <p class="sub">Start from the customers you care about, or from the blockchain itself.</p>
       <div class="grid-2">
         <div class="card">
@@ -290,6 +290,15 @@
             transaction, clusters addresses across the block, and lists sanctioned addresses and their
             co-spenders for a full address-mode review.</p>
         </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h3>Control panel and manual review · <code>btc-aml ui</code></h3>
+        <p>A local browser page, reachable only from the analyst's computer: start analyses without
+          the terminal, follow their progress, browse past runs and their audit trail, and record a
+          decision on every alert (escalate, false positive, explained) with a note and the reviewer's
+          name. Evidence links open each transaction on a public block explorer for independent
+          verification; decisions are exported as <code>review.csv</code> next to the untouched
+          automated reports.</p>
       </div>
     </div>
   </section>
@@ -403,7 +412,7 @@ Addresses for review: 2 (+474 large-cluster members, commented out)</pre>
         <li><b>Public APIs</b>Free, rate-limited and without service levels: about a minute per full block,
           a few minutes per address with multi-hop exposure.</li>
         <li><b>Not a validated system</b>Weights and thresholds are illustrative, not calibrated on real data.
-          No model validation, case management or four-eyes workflow.</li>
+          No model validation or alert tuning; the review screen is not a case-management system.</li>
       </ul>
     </div>
   </section>

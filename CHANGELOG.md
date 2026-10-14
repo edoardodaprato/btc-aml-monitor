@@ -5,7 +5,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-14
+
 ### Added
+- Local control panel (`btc-aml ui`, or double-click `start-control-panel.command` on macOS): run address analyses and block scans from the browser, follow their progress, update the OFAC list and ECB rates, browse past runs, read the audit trail and download every report.
+- Manual alert review: per alert, a decision (escalate / false positive / explained, no action), note and reviewer, saved as `review.json` and exported as `review.csv` next to the unchanged automated reports. Evidence links open each transaction on mempool.space.
+- Quick check of a single transaction (block-scan rules on one txid) in the control panel.
+- User guide section 2 on the control panel.
+
+### Added (website)
 - Project website (`site/`), published to GitHub Pages by the `pages` workflow: https://edoardodaprato.github.io/btc-aml-monitor/
 
 ## [1.0.1] - 2026-10-10
