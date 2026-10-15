@@ -8,7 +8,7 @@ from html import escape
 from typing import Any
 
 from btc_aml.block_scan import BlockReport
-from btc_aml.data_sources.labels import is_valid_btc_address
+from btc_aml.data_sources.labels import CATEGORIES, COLUMNS, Label, is_valid_btc_address
 from btc_aml.rules.base import fmt_time
 from btc_aml.web.jobs import Job
 from btc_aml.web.runs import DECISIONS, Run
@@ -86,7 +86,7 @@ def page(title: str, body: str, refresh_seconds: int | None = None) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">{refresh}
 <title>{escape(title)} · btc-aml-monitor</title><style>{CSS}</style></head><body>
 <header><div class="wrap"><a class="brand" href="/">btc-aml<span>-monitor</span></a>
-<nav><a href="/">Home</a><a href="/#runs">Past runs</a><a href="/help">How to use</a></nav>
+<nav><a href="/">Home</a><a href="/#runs">Past runs</a><a href="/labels">Labels</a><a href="/help">How to use</a></nav>
 </div></header><main><div class="wrap">{body}</div></main></body></html>"""
 
 
@@ -159,7 +159,7 @@ New here? Read <a href="/help">How to use</a>.</p>
   <div class="card">
     <h3>Your labels and settings</h3>
     <p class="small">{status["labels"]} labelled addresses ({escape(status["labels_path"])}).
-    Import new ones with <code>btc-aml import-labels file.csv</code> (see How to use).</p>
+    <a href="/labels">View and add labels</a>.</p>
     <p class="small">Rules v{escape(status["rules_version"])}, configuration hash
     <code>{escape(status["config_hash"])}</code>. Thresholds are in <code>config/rules.yaml</code>.</p>
   </div>
@@ -529,9 +529,8 @@ def help_page() -> str:
 <div class="card help"><h3>Before the first analysis</h3><ol>
 <li><b>Update OFAC list</b> on the control panel. Repeat it regularly (OFAC changes the list often).</li>
 <li>Optional: <b>Update ECB rates</b>, to fill days where no EUR price exists.</li>
-<li>Optional: add your own labels (mixer, scam...). Each needs a verifiable public source.
-Prepare a CSV like <code>data/labels_template.csv</code> and run
-<code>btc-aml import-labels my_labels.csv</code> in the terminal.</li></ol></div>
+<li>Optional: add your own labels (mixer, scam...) on the <a href="/labels">Labels</a> page,
+one at a time or by pasting a CSV. Each needs a verifiable public source.</li></ol></div>
 <div class="card help"><h3>Which analysis?</h3><ul>
 <li><b>Analyse addresses</b>: you know the addresses (a customer's deposit address, a
 counterparty). Gives a 0-100 score per address with all rules. This is the main mode.</li>
@@ -575,6 +574,66 @@ most useful when you already know something happened there.</li></ul></div>
 inside the project folder, with the CSV reports, the audit log and your review. Alerts are
 leads to investigate, not conclusions: see the known limitations in the README.</p>"""
     return page("How to use", body)
+
+
+def labels_page(labels: list[Label], today: str, message: str = "", error: str = "") -> str:
+    banner = ""
+    if message:
+        banner = f'<div class="banner ok">{escape(message)}</div>'
+    if error:
+        banner = f'<div class="banner error">Nothing was imported. {escape(error)}</div>'
+    options = "".join(f'<option value="{c}">{c}</option>' for c in sorted(CATEGORIES))
+    rows = "".join(
+        f"<tr><td>{_address_link(label.address)}</td><td>{escape(label.category)}</td>"
+        f"<td class='small'>{_source_html(label.source)}</td><td>{escape(label.date_added)}</td></tr>"
+        for label in sorted(labels, key=lambda label: (label.category, label.address))
+    )
+    table = (
+        '<div class="table-wrap"><table><thead><tr><th>Address</th><th>Category</th>'
+        f"<th>Source</th><th>Added</th></tr></thead><tbody>{rows}</tbody></table></div>"
+        if labels
+        else '<p class="muted">No labels yet.</p>'
+    )
+    body = f"""
+<h1>Address labels</h1>
+<p class="muted">Labels attribute an address to a category (exchange, mixer, scam...). Analyses use
+them for the high-risk exposure and co-spending rules (R03, R19). <b>Every label must cite a
+verifiable public source</b> (court filing, official press release, an exchange's own
+proof-of-reserves page): never add an attribution you could not justify to an auditor.
+OFAC addresses are handled automatically by the OFAC list and must not be added here.</p>
+{banner}
+<div class="grid-2">
+  <form class="card" method="post" action="/labels/add">
+    <h3>Add one label</h3>
+    <label for="l-address">Bitcoin address</label>
+    <input id="l-address" name="address" required>
+    <label for="l-category">Category</label>
+    <select id="l-category" name="category">{options}</select>
+    <label for="l-source">Source (link or document reference)</label>
+    <input id="l-source" name="source" required placeholder="e.g. https://www.justice.gov/... (case no. ...)">
+    <label for="l-date">Date added</label>
+    <input id="l-date" name="date_added" type="date" value="{escape(today)}" required>
+    <button>Add label</button>
+  </form>
+  <form class="card" method="post" action="/labels/import">
+    <h3>Import many labels (CSV)</h3>
+    <p class="muted small">Paste a CSV with the header <code>{",".join(COLUMNS)}</code>, for example
+    copied from a spreadsheet saved as CSV. Every line is checked; if one line is wrong, nothing is
+    imported and the message says which line to fix. Labels already present are skipped.</p>
+    <label for="l-csv">CSV content</label>
+    <textarea id="l-csv" name="csv" required placeholder="{",".join(COLUMNS)}&#10;bc1q...,scam,https://...,{escape(today)}"></textarea>
+    <button>Import</button>
+  </form>
+</div>
+<h2>Current labels ({len(labels)})</h2>
+{table}"""
+    return page("Labels", body)
+
+
+def _source_html(source: str) -> str:
+    if source.startswith(("https://", "http://")):
+        return f'<a href="{escape(source)}" target="_blank" rel="noopener">{escape(source)}</a>'
+    return escape(source)
 
 
 def error_page(message: str) -> str:

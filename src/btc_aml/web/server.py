@@ -7,8 +7,11 @@ page never starts an analysis twice.
 
 from __future__ import annotations
 
+import csv
+import io
 import re
 import socketserver
+from datetime import UTC, date, datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
@@ -19,7 +22,13 @@ import httpx
 from btc_aml.config import AppConfig
 from btc_aml.data_sources.ecb import load_ecb_rates
 from btc_aml.data_sources.http import DataSourceError
-from btc_aml.data_sources.labels import LabelError, read_labels
+from btc_aml.data_sources.labels import (
+    COLUMNS,
+    ImportResult,
+    LabelError,
+    import_labels,
+    read_labels,
+)
 from btc_aml.data_sources.ofac import OfacError, load_ofac_list
 from btc_aml.runner import BlockRangeError, check_transaction
 from btc_aml.screening import Screener
@@ -81,8 +90,28 @@ class ControlPanel:
                 self._tip = None
         return self._tip
 
+    def import_labels_text(self, text: str) -> ImportResult:
+        """Validate pasted CSV text and merge it into the labels file (all or nothing)."""
+        inputs = self.config.output_dir / "ui_inputs"
+        inputs.mkdir(parents=True, exist_ok=True)
+        path = inputs / f"labels_{datetime.now(UTC):%Y%m%dT%H%M%S%fZ}.csv"
+        path.write_text(text.strip() + "\n", encoding="utf-8")
+        try:
+            return import_labels(path, self.config.labels_path)
+        except LabelError as exc:  # the temporary file name means nothing to the user
+            raise LabelError(str(exc).replace(f"{path}: ", "")) from exc
+
     def services(self) -> Services:
         return Services.from_config(self.config, transport=self.transport)
+
+
+def single_label_csv(form: dict[str, str]) -> str:
+    """CSV text (header + one row) for a label entered in the form."""
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(COLUMNS)
+    writer.writerow([form.get(column, "").strip() for column in COLUMNS])
+    return buffer.getvalue()
 
 
 def make_handler(panel: ControlPanel) -> type[BaseHTTPRequestHandler]:
@@ -105,6 +134,8 @@ def make_handler(panel: ControlPanel) -> type[BaseHTTPRequestHandler]:
                     self._html(render.home_page(panel.status(), runs, panel.jobs.current, message))
                 elif url.path == "/job":
                     self._html(render.job_page(panel.jobs.current))
+                elif url.path == "/labels":
+                    self._labels_page(query.get("ok", [""])[0], query.get("error", [""])[0])
                 elif url.path == "/help":
                     self._html(render.help_page())
                 elif url.path == "/tx":
@@ -121,6 +152,14 @@ def make_handler(panel: ControlPanel) -> type[BaseHTTPRequestHandler]:
                     self._not_found()
             except RunNotFoundError as exc:
                 self._html(render.error_page(str(exc)), HTTPStatus.NOT_FOUND)
+
+        def _labels_page(self, message: str, error: str) -> None:
+            today = date.today().isoformat()
+            try:
+                labels = read_labels(panel.config.labels_path)
+            except LabelError as exc:
+                labels, error = [], f"The labels file has errors: {exc}"
+            self._html(render.labels_page(labels, today, message, error))
 
         def _transaction(self, txid: str) -> None:
             if not render.TXID.match(txid):
@@ -158,6 +197,22 @@ def make_handler(panel: ControlPanel) -> type[BaseHTTPRequestHandler]:
                 elif path == "/update/fx":
                     panel.jobs.update_fx()
                     self._redirect("/job")
+                elif path in ("/labels/add", "/labels/import"):
+                    adding_one = path == "/labels/add"
+                    text = single_label_csv(form) if adding_one else form.get("csv", "")
+                    try:
+                        result = panel.import_labels_text(text)
+                    except LabelError as exc:
+                        error = str(exc).replace("line 2: ", "") if adding_one else str(exc)
+                        self._redirect("/labels?error=" + quote(error))
+                        return
+                    self._redirect(
+                        "/labels?ok="
+                        + quote(
+                            f"{result.added} label(s) added, {result.duplicates} already present. "
+                            f"{result.total} labels in total."
+                        )
+                    )
                 elif (match := RUN_PATH.match(path)) and match["rest"] == "/review":
                     run_id = match["run_id"]
                     panel.reviewer = form.get("reviewer", "")

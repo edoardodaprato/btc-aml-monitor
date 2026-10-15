@@ -5,6 +5,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-15
+
+### Added
+- Control panel: **Labels** page to add one label with a form or import many by pasting a CSV (same all-or-nothing validation as `import-labels`), and to list every label with its source.
+- Website: the full user guide as its own page (`site/guide.html`) with a table of contents, generated from `docs/GUIDE.md` by `scripts/build_site.py`; a test fails if the page is out of date.
+
+### Changed
+- Website navigation: "How to use" replaced by "Guide" (the short how-to section remains on the main page).
+- User guide: labels are now added from the control panel (section 5).
+
 ## [1.2.0] - 2026-10-15
 
 ### Added

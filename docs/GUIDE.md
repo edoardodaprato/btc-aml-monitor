@@ -1,6 +1,6 @@
 # btc-aml-monitor user guide
 
-A step-by-step guide for readers starting from scratch. It describes version 1.2.0.
+A step-by-step guide for readers starting from scratch. It describes version 1.3.0.
 
 ## 1. Installation
 
@@ -48,7 +48,8 @@ The panel is reachable **only from your computer**: nothing is published online.
 | 1 · Analyse addresses | Paste addresses (one per line) and start an address-mode analysis. A progress page follows the run; when it is done, *Open the results*. |
 | 2 · Scan blocks | Enter a block height (and optionally a last one) to scan up to 10 blocks. |
 | 3 · Check one transaction | Paste a txid for a quick check of that transaction alone (not saved). |
-| Reference data | Update the OFAC list and the ECB rates with one click; see how many labels you have and which configuration is in use. |
+| Reference data | Update the OFAC list and the ECB rates with one click; see which configuration is in use. |
+| Labels | Add your own address labels one by one or by pasting a CSV, and see all of them with their sources (section 5). |
 | Past runs | Every analysis ever run, with the number of alerts and how many you have reviewed. |
 
 **Reading a run.** The results page shows the score of each address with the reasons, every
@@ -127,20 +128,24 @@ address,category,source,date_added
 | `source` | Link or reference to a **verifiable** public source (mandatory) |
 | `date_added` | Date added, format `YYYY-MM-DD` |
 
-### Import procedure
+### Adding labels from the control panel
 
-1. Prepare a CSV with the same four columns, starting from a copy of the template.
-2. For each row, put in the `source` column the public document the attribution comes from.
-3. Import it:
+Open **Labels** in the control panel. You can:
 
-   ```bash
-   btc-aml import-labels my_labels.csv
-   ```
+- **add one label**: address, category (from a list), source and date, then *Add label*;
+- **import many labels**: paste the content of a CSV with the four columns above (for
+  example a spreadsheet saved as CSV), then *Import*.
 
-4. The file is checked line by line. If even one line is wrong (malformed address, unknown
-   category, missing source, invalid date), **the whole import is rejected** and the
-   message lists the lines to fix. Labels already present are skipped, so the same file
-   can be imported again without creating duplicates.
+Every line is checked: if even one line is wrong (malformed address, unknown category,
+missing source, invalid date), **nothing is imported** and the message lists the lines to
+fix. Labels already present are skipped, so the same list can be imported again without
+creating duplicates. The page also lists every label you have, with its source.
+
+From a terminal, the same import is:
+
+```bash
+btc-aml import-labels my_labels.csv
+```
 
 ### Verifiable public sources
 

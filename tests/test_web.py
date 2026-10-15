@@ -195,3 +195,47 @@ def test_invalid_txid_is_rejected(panel: str) -> None:
     status, html = get(f"{panel}/tx?txid=not-a-txid")
     assert status == 200
     assert "Not a valid transaction id" in html
+
+
+# --- labels -------------------------------------------------------------------------------
+
+BIP173_EXAMPLE = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"  # example from BIP-173, not real
+
+
+def test_add_one_label(panel: str, panel_config: AppConfig) -> None:
+    status, html = post(
+        f"{panel}/labels/add",
+        {
+            "address": BIP173_EXAMPLE,
+            "category": "scam",
+            "source": "https://example.org/court-filing",
+            "date_added": "2026-10-15",
+        },
+    )
+    assert status == 200
+    assert "1 label(s) added" in html
+    assert BIP173_EXAMPLE in html
+    assert BIP173_EXAMPLE in panel_config.labels_path.read_text()
+
+
+def test_invalid_label_is_rejected_and_nothing_is_written(
+    panel: str, panel_config: AppConfig
+) -> None:
+    _, html = post(
+        f"{panel}/labels/add",
+        {"address": BIP173_EXAMPLE, "category": "scam", "source": "", "date_added": "2026-10-15"},
+    )
+    assert "Nothing was imported" in html
+    assert "missing source" in html
+    assert "ui_inputs" not in html  # no internal file names in messages
+    assert not panel_config.labels_path.exists()
+
+
+def test_csv_import_skips_duplicates(panel: str) -> None:
+    csv_text = (
+        "address,category,source,date_added\n"
+        f"{BIP173_EXAMPLE},mixer,https://example.org/a,2026-10-15\n"
+    )
+    post(f"{panel}/labels/import", {"csv": csv_text})
+    _, html = post(f"{panel}/labels/import", {"csv": csv_text})
+    assert "0 label(s) added, 1 already present" in html

@@ -14,7 +14,7 @@ and the EBA ML/TF Risk Factors Guidelines for crypto-asset service providers. Ev
 explainable: it carries the rule that fired, its regulatory reference, the score contribution
 and the transaction-level evidence.
 
-> **Status: v1.2.0.** Address mode, block-scan mode, 21 rules, explainable scoring, CSV reports,
+> **Status: v1.3.0.** Address mode, block-scan mode, 21 rules, explainable scoring, CSV reports,
 > audit trail and a local control panel with manual alert review. See the [CHANGELOG](CHANGELOG.md).
 
 ## The problem
@@ -68,7 +68,7 @@ btc-aml ui        # or double-click start-control-panel.command on macOS
 ```
 
 A local web page (reachable only from your computer) to run analyses without the
-terminal, update the OFAC list, browse past runs, read the audit trail, and **record a
+terminal, update the OFAC list, add address labels, browse past runs, read the audit trail, and **record a
 manual review of every alert**: decision (escalate / false positive / no action), note and
 reviewer, saved as `review.csv` next to the untouched automated reports. Evidence links open
 each transaction on a public block explorer for independent verification.
@@ -84,7 +84,8 @@ each transaction on a public block explorer for independent verification.
   writes `blocks.csv`, `block_alerts.csv` and `addresses_for_review.txt`, a list of
   sanctioned or labelled addresses and their co-spenders ready for address mode.
 
-A step-by-step user guide is available in [docs/GUIDE.md](docs/GUIDE.md).
+A step-by-step user guide is available in [docs/GUIDE.md](docs/GUIDE.md) and on the
+[website](https://edoardodaprato.github.io/btc-aml-monitor/guide.html).
 
 ## Example output
 
