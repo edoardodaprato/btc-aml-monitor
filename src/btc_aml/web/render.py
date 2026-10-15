@@ -74,6 +74,7 @@ details>summary{cursor:pointer;color:var(--accent);margin:6px 0}
 dl.facts{display:grid;grid-template-columns:220px 1fr;gap:6px 16px;margin:0}
 dl.facts dt{color:var(--muted)}dl.facts dd{margin:0;word-break:break-word}
 .help li{margin-bottom:6px}
+.inline-form{display:inline}.inline-form button{margin:0 0 0 6px;padding:1px 10px;font-size:12px;white-space:nowrap}
 @media(max-width:860px){.grid,.grid-2{grid-template-columns:1fr}.review{grid-template-columns:1fr}
 dl.facts{grid-template-columns:1fr}}
 """
@@ -415,6 +416,7 @@ maxlength="80"></label>
 def _transactions_table(txs: list[dict[str, str]]) -> str:
     rows = "".join(
         f"<tr><td>{_tx_link(t['txid'])}</td><td>{escape(t['block_time'][:16])}</td>"
+        f"<td>{escape(t['block_height'])} {_scan_block_button(t['block_height'])}</td>"
         f"<td>{escape(t['direction'])}</td><td>{escape(t['amount_btc'])}</td>"
         f"<td>{escape(t['amount_eur'])}</td><td class='small'>{escape(t['btc_eur_price_source'])} "
         f"{escape(t['btc_eur_price_date'])}</td><td>{'yes' if t['is_coinjoin'] == 'True' else ''}</td></tr>"
@@ -422,8 +424,10 @@ def _transactions_table(txs: list[dict[str, str]]) -> str:
     )
     return (
         f"<details><summary>All {len(txs)} analysed transactions</summary>"
+        '<p class="small muted">"Scan block" checks every transaction of the block that contains '
+        "this one: useful to see who else was active alongside this address.</p>"
         '<div class="table-wrap"><table><thead><tr><th>Transaction</th><th>Time (UTC)</th>'
-        "<th>Direction</th><th>BTC</th><th>EUR</th><th>Price used</th><th>CoinJoin</th></tr>"
+        "<th>Block</th><th>Direction</th><th>BTC</th><th>EUR</th><th>Price used</th><th>CoinJoin</th></tr>"
         f"</thead><tbody>{rows}</tbody></table></div></details>"
     )
 
@@ -488,7 +492,7 @@ def tx_page(txid: str, report: BlockReport | None, error: str = "") -> str:
     body.append(f"""
 <div class="card"><p>{_tx_link(txid, "open on block explorer")}</p>
 <dl class="facts">
-<dt>Block</dt><dd>{block.height} · {escape(fmt_time(block.timestamp))}</dd>
+<dt>Block</dt><dd>{block.height} · {escape(fmt_time(block.timestamp))} {_scan_block_button(str(block.height))}</dd>
 <dt>Inputs / outputs</dt><dd>{len(tx.inputs)} / {len(tx.outputs)}</dd>
 <dt>Total output</dt><dd>{tx.total_output_sats / 1e8:.8f} BTC</dd>
 <dt>Fee</dt><dd>{tx.fee_sats} sats ({tx.fee_rate:.1f} sat/vB; block median
@@ -550,6 +554,22 @@ and write why (documents checked, customer explanation...).</li>
 <code>review.csv</code>) next to the original reports, which are never changed.</li>
 <li>The <b>Audit trail</b> section shows exactly which rules, thresholds, sanctions list
 version and data sources produced the results.</li></ol></div>
+<div class="card help"><h3>Where to find addresses and blocks</h3><ul>
+<li>Everything on the Bitcoin blockchain is public. A <b>block explorer</b> such as
+<a href="https://mempool.space" target="_blank" rel="noopener">mempool.space</a> lets you search any
+address, transaction id or block number (the block <i>height</i>).</li>
+<li><b>Start from a known case</b>: sanctions press releases (OFAC), court filings and
+Europol or Department of Justice announcements often quote addresses or txids.</li>
+<li><b>From address to block</b>: analyse an address, open "All analysed transactions" and
+press <i>Scan block</i> next to a transaction to check everything else in that block.</li>
+<li>A random block mostly shows ordinary exchange and mining-pool activity: block scan is
+most useful when you already know something happened there.</li></ul></div>
+<div class="card help"><h3>Typical workflow</h3><ol>
+<li>Update the OFAC list.</li>
+<li>Analyse the customer's or counterparty's addresses.</li>
+<li>Read the score and the reasons; open the alerts with the highest severity first.</li>
+<li>Verify each alert on the block explorer; if useful, scan the blocks of key transactions.</li>
+<li>Record a decision and a note for every alert; download <code>review.csv</code> for the file.</li></ol></div>
 </div>
 <p class="small muted">Where files are: every run is a folder <code>output/&lt;run id&gt;/</code>
 inside the project folder, with the CSV reports, the audit log and your review. Alerts are
@@ -569,6 +589,18 @@ def _tx_link(txid: str, text: str | None = None) -> str:
         return escape(txid)
     label = escape(text) if text else f"<span class='mono'>{txid[:10]}…</span>"
     return f'<a href="{EXPLORER}/tx/{txid}" target="_blank" rel="noopener">{label}</a>'
+
+
+def _scan_block_button(height: str) -> str:
+    """Small form that starts a block scan of ``height`` (posts to the normal scan route)."""
+    if not height.isdigit():
+        return ""
+    return (
+        f'<form class="inline-form" method="post" action="/run/blocks">'
+        f'<input type="hidden" name="start" value="{height}">'
+        f'<button class="secondary" title="Scan every transaction of block {height}">Scan block</button>'
+        "</form>"
+    )
 
 
 def _address_link(address: str, text: str | None = None) -> str:

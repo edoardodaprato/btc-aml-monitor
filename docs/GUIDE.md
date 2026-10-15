@@ -1,6 +1,6 @@
 # btc-aml-monitor user guide
 
-A step-by-step guide for readers starting from scratch. It describes version 1.1.0.
+A step-by-step guide for readers starting from scratch. It describes version 1.2.0.
 
 ## 1. Installation
 
@@ -69,6 +69,16 @@ version, rules and thresholds, OFAC list version and data sources, plus the full
 Decisions are stored in the run folder as `review.json` and exported as `review.csv` (one
 row per alert, with decision, note, reviewer and time). The automated reports are never
 changed, so the tool's output and the human decision stay separate, as an auditor expects.
+
+**Where to find addresses and blocks.** Everything on the Bitcoin blockchain is public.
+A block explorer such as [mempool.space](https://mempool.space) lets you search any address,
+transaction id or block number (the block *height*; the first block is 0). Good starting
+points are sanctions press releases (OFAC), court filings and announcements by Europol or
+the U.S. Department of Justice, which often quote addresses or transaction ids. From an
+analysed address, open *All analysed transactions* and press **Scan block** next to a
+transaction to check everything else in that block. A random block mostly shows ordinary
+exchange and mining-pool activity: block scan is most useful when you already know
+something happened there.
 
 ## 3. Configuration
 

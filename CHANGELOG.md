@@ -5,6 +5,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-15
+
+### Added
+- Control panel: **Scan block** button next to each analysed transaction and on the transaction check page, to scan the block that contains it in one click.
+- Control panel help, user guide and website: where to find addresses and blocks (block explorers, sanctions press releases, court filings) and a typical review workflow.
+- Website: "How to use it" section (install, open the control panel, run an analysis, review and audit).
+
+### Fixed
+- Website: no horizontal scrolling on narrow screens when a card contains a code block.
+
 ## [1.1.0] - 2026-10-14
 
 ### Added

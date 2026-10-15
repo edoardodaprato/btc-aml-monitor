@@ -107,6 +107,7 @@
   section .sub { color: var(--muted); margin: 0 0 28px; max-width: 760px; }
   .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
   .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-2 > *, .grid-3 > * { min-width: 0; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
   .card h3 { margin: 0 0 8px; font-size: 17px; }
   .card p { margin: 0; color: var(--muted); font-size: 15px; }
@@ -171,6 +172,7 @@
       <a href="#scoring">Scoring</a>
       <a href="#rules">Rules</a>
       <a href="#example">Example</a>
+      <a href="#use">How to use</a>
       <a href="#limits">Limitations</a>
       <a href="https://github.com/edoardodaprato/btc-aml-monitor">GitHub</a>
     </nav>
@@ -186,7 +188,7 @@
       is traced to a rule, its regulatory reference and the transactions behind it.</p>
     <div class="buttons">
       <a class="btn primary" href="https://github.com/edoardodaprato/btc-aml-monitor">View on GitHub</a>
-      <a class="btn" href="https://github.com/edoardodaprato/btc-aml-monitor/blob/main/docs/GUIDE.md">User guide</a>
+      <a class="btn" href="#use">How to use it</a>
       <a class="btn" href="https://github.com/edoardodaprato/btc-aml-monitor/tree/main/examples">Example reports</a>
     </div>
     <div class="stats">
@@ -392,6 +394,59 @@
   the counterparty to contact.</span>
 
 Addresses for review: 2 (+474 large-cluster members, commented out)</pre>
+    </div>
+  </section>
+
+  <section id="use">
+    <div class="wrap">
+      <h2>How to use it</h2>
+      <p class="sub">The tool runs on your own computer, not on this website. Install it once, then
+        work from a control panel in your browser. The full step-by-step guide is in
+        <a href="https://github.com/edoardodaprato/btc-aml-monitor/blob/main/docs/GUIDE.md">docs/GUIDE.md</a>.</p>
+      <div class="grid-2">
+        <div class="card">
+          <div class="step-num">Step 1</div>
+          <h3>Install (once)</h3>
+          <p>You need Python 3.11+ and Git. In a terminal:</p>
+<pre class="term" style="margin-top:10px">git clone https://github.com/edoardodaprato/btc-aml-monitor.git
+cd btc-aml-monitor
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"</pre>
+        </div>
+        <div class="card">
+          <div class="step-num">Step 2</div>
+          <h3>Open the control panel</h3>
+          <p>Double-click <code>start-control-panel.command</code> in the project folder (macOS), or run
+            <code>btc-aml ui</code>. The panel opens in your browser and is reachable only from your
+            computer. First click <b>Update OFAC list</b> to download the current sanctions list.</p>
+        </div>
+        <div class="card">
+          <div class="step-num">Step 3</div>
+          <h3>Run an analysis</h3>
+          <p><b>Analyse addresses</b>: paste the addresses of a customer or counterparty, one per line,
+            and get a 0–100 score per address. <b>Scan blocks</b>: enter a block number to check every
+            transaction in it. <b>Check one transaction</b>: paste a txid for a quick look.</p>
+        </div>
+        <div class="card">
+          <div class="step-num">Step 4</div>
+          <h3>Review and audit</h3>
+          <p>Open the run from <b>Past runs</b>. For each alert, follow the evidence links to verify the
+            transactions on a public block explorer, then record a decision (escalate, false positive,
+            explained) with a note. The <b>Audit trail</b> shows the rules, thresholds, sanctions list
+            version and data sources behind every result.</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h3>Where do addresses and blocks come from?</h3>
+        <p>The Bitcoin blockchain is public. A block explorer such as
+          <a href="https://mempool.space">mempool.space</a> lets anyone look up an address, a transaction
+          id or a block number (its <i>height</i>). Good starting points are sanctions press releases,
+          court filings and law-enforcement announcements, which often quote addresses or transaction
+          ids. From an analysed address, the panel's <b>Scan block</b> button checks everything else in
+          the block of any of its transactions. A random block mostly shows ordinary exchange and
+          mining-pool activity: block scan is most useful when you already know something happened there.</p>
+      </div>
     </div>
   </section>
 

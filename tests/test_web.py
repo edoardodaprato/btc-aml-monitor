@@ -96,6 +96,7 @@ def test_saved_run_is_shown_with_evidence_links(panel: str, panel_config: AppCon
     assert "R01_OFAC_DIRECT" in html
     assert "https://mempool.space/tx/" in html
     assert "Audit trail" in html
+    assert "Scan block" in html  # one-click scan of the block of each transaction
 
 
 def test_review_decision_is_saved_and_exported(panel: str, panel_config: AppConfig) -> None:

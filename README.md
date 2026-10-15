@@ -14,7 +14,7 @@ and the EBA ML/TF Risk Factors Guidelines for crypto-asset service providers. Ev
 explainable: it carries the rule that fired, its regulatory reference, the score contribution
 and the transaction-level evidence.
 
-> **Status: v1.1.0.** Address mode, block-scan mode, 21 rules, explainable scoring, CSV reports,
+> **Status: v1.2.0.** Address mode, block-scan mode, 21 rules, explainable scoring, CSV reports,
 > audit trail and a local control panel with manual alert review. See the [CHANGELOG](CHANGELOG.md).
 
 ## The problem
