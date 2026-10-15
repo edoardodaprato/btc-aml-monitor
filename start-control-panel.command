@@ -1,5 +1,5 @@
 #!/bin/bash
-# Double-click this file (macOS) to open the btc-aml-monitor control panel in the browser.
+# Double-click this file (macOS) to open the Tracery control panel in the browser.
 # Requires the installation described in docs/GUIDE.md (section 1).
 cd "$(dirname "$0")" || exit 1
 if [ ! -x .venv/bin/btc-aml ]; then

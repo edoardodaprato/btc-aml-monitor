@@ -29,7 +29,7 @@ from btc_aml.web.server import create_server
 SATS_PER_BTC = 100_000_000
 
 app = typer.Typer(
-    help="Retrospective Bitcoin transaction monitoring for AML compliance.",
+    help="Tracery (btc-aml-monitor): retrospective Bitcoin transaction monitoring for AML.",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -41,7 +41,7 @@ ConfigDirOption = Annotated[
 
 def _version_callback(value: bool) -> None:
     if value:
-        typer.echo(f"btc-aml-monitor {__version__}")
+        typer.echo(f"Tracery (btc-aml-monitor) {__version__}")
         raise typer.Exit()
 
 
@@ -52,7 +52,7 @@ def main(
         typer.Option("--version", callback=_version_callback, is_eager=True, help="Show version."),
     ] = False,
 ) -> None:
-    """Retrospective Bitcoin transaction monitoring for AML compliance."""
+    """Tracery (btc-aml-monitor): retrospective Bitcoin transaction monitoring for AML."""
 
 
 @app.command("show-config")

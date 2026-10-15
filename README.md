@@ -1,4 +1,6 @@
-# btc-aml-monitor
+# Tracery
+
+<sub>project name: <code>btc-aml-monitor</code></sub>
 
 [![tests](https://github.com/edoardodaprato/btc-aml-monitor/actions/workflows/tests.yml/badge.svg)](https://github.com/edoardodaprato/btc-aml-monitor/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -6,15 +8,15 @@
 
 **Retrospective Bitcoin transaction monitoring for AML compliance**, built on free public data only.
 
-🌐 **Project website: [edoardodaprato.github.io/btc-aml-monitor](https://edoardodaprato.github.io/btc-aml-monitor/)**
+🌐 **Project website and user guide: [edoardodaprato.github.io/btc-aml-monitor](https://edoardodaprato.github.io/btc-aml-monitor/)**
 
-The tool screens Bitcoin addresses and block ranges against the OFAC SDN list and a set of
+Tracery screens Bitcoin addresses and block ranges against the OFAC SDN list and a set of
 red-flag rules derived from the FATF *Red Flag Indicators of ML/TF on Virtual Assets* (2020)
 and the EBA ML/TF Risk Factors Guidelines for crypto-asset service providers. Every alert is
 explainable: it carries the rule that fired, its regulatory reference, the score contribution
 and the transaction-level evidence.
 
-> **Status: v1.3.0.** Address mode, block-scan mode, 21 rules, explainable scoring, CSV reports,
+> **Status: v1.4.0.** Address mode, block-scan mode, 21 rules, explainable scoring, CSV reports,
 > audit trail and a local control panel with manual alert review. See the [CHANGELOG](CHANGELOG.md).
 
 ## The problem
@@ -84,8 +86,8 @@ each transaction on a public block explorer for independent verification.
   writes `blocks.csv`, `block_alerts.csv` and `addresses_for_review.txt`, a list of
   sanctioned or labelled addresses and their co-spenders ready for address mode.
 
-A step-by-step user guide is available in [docs/GUIDE.md](docs/GUIDE.md) and on the
-[website](https://edoardodaprato.github.io/btc-aml-monitor/guide.html).
+A step-by-step user guide is available in [docs/GUIDE.md](docs/GUIDE.md), on the
+[website](https://edoardodaprato.github.io/btc-aml-monitor/#guide) and in the control panel (*Guide*).
 
 ## Example output
 

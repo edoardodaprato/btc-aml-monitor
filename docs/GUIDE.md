@@ -1,6 +1,8 @@
-# btc-aml-monitor user guide
+# Tracery user guide
 
-A step-by-step guide for readers starting from scratch. It describes version 1.3.0.
+Tracery (project name `btc-aml-monitor`) is an open-source tool that checks Bitcoin
+addresses and transactions for money-laundering and sanctions red flags. This guide is for
+readers starting from scratch and describes version 1.4.0.
 
 ## 1. Installation
 
@@ -70,6 +72,14 @@ version, rules and thresholds, OFAC list version and data sources, plus the full
 Decisions are stored in the run folder as `review.json` and exported as `review.csv` (one
 row per alert, with decision, note, reviewer and time). The automated reports are never
 changed, so the tool's output and the human decision stay separate, as an auditor expects.
+
+**Typical workflow.**
+
+1. Update the OFAC list.
+2. Analyse the addresses of the customer or counterparty.
+3. Read the score and its reasons; open the most severe alerts first.
+4. Verify each alert on the block explorer; if useful, scan the blocks of key transactions.
+5. Record a decision and a note for every alert, and download `review.csv` for the file.
 
 **Where to find addresses and blocks.** Everything on the Bitcoin blockchain is public.
 A block explorer such as [mempool.space](https://mempool.space) lets you search any address,

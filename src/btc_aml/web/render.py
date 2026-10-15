@@ -9,11 +9,13 @@ from typing import Any
 
 from btc_aml.block_scan import BlockReport
 from btc_aml.data_sources.labels import CATEGORIES, COLUMNS, Label, is_valid_btc_address
+from btc_aml.guide import GuideHtml
 from btc_aml.rules.base import fmt_time
 from btc_aml.web.jobs import Job
 from btc_aml.web.runs import DECISIONS, Run
 
 EXPLORER = "https://mempool.space"
+WEBSITE = "https://edoardodaprato.github.io/btc-aml-monitor/"
 TXID = re.compile(r"^[0-9a-f]{64}$")
 MAX_EVIDENCE_SHOWN = 5
 
@@ -32,7 +34,8 @@ a{color:var(--accent)}code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,m
 header{border-bottom:1px solid var(--border);background:var(--surface)}
 header .wrap{display:flex;align-items:center;gap:20px;height:54px}
 header .brand{font-weight:700;color:var(--text);text-decoration:none}
-header .brand span{color:var(--accent)}
+header .brand{display:flex;flex-direction:column;line-height:1.05;font-size:18px}
+header .brand small{font-size:11px;font-weight:500;color:var(--muted)}
 header nav a{color:var(--muted);text-decoration:none;margin-right:16px;font-size:14px}
 main{padding:24px 0 64px}
 h1{font-size:24px;margin:0 0 4px}h2{font-size:19px;margin:28px 0 12px}h3{font-size:16px;margin:0 0 8px}
@@ -73,9 +76,18 @@ max-height:420px;overflow:auto;white-space:pre-wrap}
 details>summary{cursor:pointer;color:var(--accent);margin:6px 0}
 dl.facts{display:grid;grid-template-columns:220px 1fr;gap:6px 16px;margin:0}
 dl.facts dt{color:var(--muted)}dl.facts dd{margin:0;word-break:break-word}
-.help li{margin-bottom:6px}
+.guide-layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:36px}
+.guide-toc{position:sticky;top:16px;align-self:start;max-height:calc(100vh - 32px);overflow-y:auto;font-size:14px}
+.guide-toc ol{list-style:none;padding:0;margin:0}.guide-toc li{margin:0 0 8px}
+.guide-toc a{color:var(--muted);text-decoration:none}.guide-toc a:hover{color:var(--text)}
+.guide{min-width:0;max-width:820px}
+.guide h2{border-top:1px solid var(--border);padding-top:20px;margin-top:36px}
+.guide pre{background:#0f1720;color:#e6edf3;border-radius:10px;padding:14px;overflow-x:auto;font-size:13px}
+.guide pre code{font-size:inherit}
+.guide blockquote{margin:14px 0;padding:10px 14px;background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 8px 8px 0}
+.guide blockquote p{margin:0}.guide .table-wrap{margin:14px 0}.guide li{margin-bottom:4px}
 .inline-form{display:inline}.inline-form button{margin:0 0 0 6px;padding:1px 10px;font-size:12px;white-space:nowrap}
-@media(max-width:860px){.grid,.grid-2{grid-template-columns:1fr}.review{grid-template-columns:1fr}
+@media(max-width:860px){.grid,.grid-2,.guide-layout{grid-template-columns:1fr}.guide-toc{position:static;max-height:none}.review{grid-template-columns:1fr}
 dl.facts{grid-template-columns:1fr}}
 """
 
@@ -84,9 +96,9 @@ def page(title: str, body: str, refresh_seconds: int | None = None) -> str:
     refresh = f'<meta http-equiv="refresh" content="{refresh_seconds}">' if refresh_seconds else ""
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">{refresh}
-<title>{escape(title)} · btc-aml-monitor</title><style>{CSS}</style></head><body>
-<header><div class="wrap"><a class="brand" href="/">btc-aml<span>-monitor</span></a>
-<nav><a href="/">Home</a><a href="/#runs">Past runs</a><a href="/labels">Labels</a><a href="/help">How to use</a></nav>
+<title>{escape(title)} · Tracery</title><style>{CSS}</style></head><body>
+<header><div class="wrap"><a class="brand" href="/">Tracery<small>btc-aml-monitor</small></a>
+<nav><a href="/">Home</a><a href="/#runs">Past runs</a><a href="/labels">Labels</a><a href="/guide">Guide</a></nav>
 </div></header><main><div class="wrap">{body}</div></main></body></html>"""
 
 
@@ -114,7 +126,7 @@ def home_page(status: dict[str, Any], runs: list[Run], job: Job | None, message:
 <h1>Control panel</h1>
 <p class="muted">Run an analysis, then open it from <a href="#runs">Past runs</a> to read the
 results, check the evidence on a block explorer and record your review of each alert.
-New here? Read <a href="/help">How to use</a>.</p>
+New here? Read the <a href="/guide">Guide</a>.</p>
 <div class="grid">
   <form class="card" method="post" action="/run/addresses">
     <h3>1 · Analyse addresses</h3>
@@ -522,58 +534,23 @@ def tx_page(txid: str, report: BlockReport | None, error: str = "") -> str:
 # --- help --------------------------------------------------------------------------------
 
 
-def help_page() -> str:
-    body = """
-<h1>How to use</h1>
-<div class="grid-2">
-<div class="card help"><h3>Before the first analysis</h3><ol>
-<li><b>Update OFAC list</b> on the control panel. Repeat it regularly (OFAC changes the list often).</li>
-<li>Optional: <b>Update ECB rates</b>, to fill days where no EUR price exists.</li>
-<li>Optional: add your own labels (mixer, scam...) on the <a href="/labels">Labels</a> page,
-one at a time or by pasting a CSV. Each needs a verifiable public source.</li></ol></div>
-<div class="card help"><h3>Which analysis?</h3><ul>
-<li><b>Analyse addresses</b>: you know the addresses (a customer's deposit address, a
-counterparty). Gives a 0-100 score per address with all rules. This is the main mode.</li>
-<li><b>Scan blocks</b>: you want to see what happened in a period, without addresses.
-Gives leads (sanctioned addresses, CoinJoins...) and a list of addresses to analyse next.</li>
-<li><b>Check one transaction</b>: you have a txid in hand and want a quick look.</li></ul></div>
-<div class="card help"><h3>Reading the results</h3><ul>
-<li><b>Score and band</b>: Low 0-24, Medium 25-49, High 50-74, Severe 75-100. Direct
-sanctions exposure is always Severe. "Why" lists every rule's contribution.</li>
-<li><b>Each alert</b> says what was found, the amount, the regulatory reference and the
-transactions behind it.</li>
-<li><b>Warnings</b> (⚠) tell you when a limit was hit: truncated history, incomplete
-exposure search, rules that could not run.</li></ul></div>
-<div class="card help"><h3>Manual review (four-eyes check)</h3><ol>
-<li>Open the evidence links: they show the transactions on mempool.space, a public block
-explorer, so you can verify amounts, dates and addresses independently.</li>
-<li>Pick a decision: <i>Escalate</i>, <i>False positive</i> or <i>Explained, no action</i>,
-and write why (documents checked, customer explanation...).</li>
-<li>Decisions are saved in the run folder (<code>review.json</code>, exported as
-<code>review.csv</code>) next to the original reports, which are never changed.</li>
-<li>The <b>Audit trail</b> section shows exactly which rules, thresholds, sanctions list
-version and data sources produced the results.</li></ol></div>
-<div class="card help"><h3>Where to find addresses and blocks</h3><ul>
-<li>Everything on the Bitcoin blockchain is public. A <b>block explorer</b> such as
-<a href="https://mempool.space" target="_blank" rel="noopener">mempool.space</a> lets you search any
-address, transaction id or block number (the block <i>height</i>).</li>
-<li><b>Start from a known case</b>: sanctions press releases (OFAC), court filings and
-Europol or Department of Justice announcements often quote addresses or txids.</li>
-<li><b>From address to block</b>: analyse an address, open "All analysed transactions" and
-press <i>Scan block</i> next to a transaction to check everything else in that block.</li>
-<li>A random block mostly shows ordinary exchange and mining-pool activity: block scan is
-most useful when you already know something happened there.</li></ul></div>
-<div class="card help"><h3>Typical workflow</h3><ol>
-<li>Update the OFAC list.</li>
-<li>Analyse the customer's or counterparty's addresses.</li>
-<li>Read the score and the reasons; open the alerts with the highest severity first.</li>
-<li>Verify each alert on the block explorer; if useful, scan the blocks of key transactions.</li>
-<li>Record a decision and a note for every alert; download <code>review.csv</code> for the file.</li></ol></div>
-</div>
-<p class="small muted">Where files are: every run is a folder <code>output/&lt;run id&gt;/</code>
-inside the project folder, with the CSV reports, the audit log and your review. Alerts are
-leads to investigate, not conclusions: see the known limitations in the README.</p>"""
-    return page("How to use", body)
+def guide_page(guide: GuideHtml | None) -> str:
+    """The full user guide (docs/GUIDE.md), the same text as on the website."""
+    if guide is None:
+        body = (
+            "<h1>Guide</h1><p>The guide file (docs/GUIDE.md) is not available in this "
+            f'installation. Read it on the <a href="{WEBSITE}#guide" target="_blank" '
+            'rel="noopener">website</a>.</p>'
+        )
+        return page("Guide", body)
+    toc = "".join(f'<li><a href="#{anchor}">{title}</a></li>' for anchor, title in guide.toc)
+    body = f"""
+<div class="guide-layout">
+<aside class="guide-toc card"><h3>Contents</h3><ol>{toc}</ol></aside>
+<article class="guide"><h1>{escape(guide.title)}</h1>
+{guide.body}</article>
+</div>"""
+    return page("Guide", body)
 
 
 def labels_page(labels: list[Label], today: str, message: str = "", error: str = "") -> str:

@@ -30,6 +30,7 @@ from btc_aml.data_sources.labels import (
     read_labels,
 )
 from btc_aml.data_sources.ofac import OfacError, load_ofac_list
+from btc_aml.guide import GUIDE_PATH, GuideHtml, guide_html
 from btc_aml.runner import BlockRangeError, check_transaction
 from btc_aml.screening import Screener
 from btc_aml.services import Services
@@ -105,6 +106,13 @@ class ControlPanel:
         return Services.from_config(self.config, transport=self.transport)
 
 
+def load_guide() -> GuideHtml | None:
+    """The user guide as HTML, read fresh on every request (None if the file is missing)."""
+    if not GUIDE_PATH.is_file():
+        return None
+    return guide_html(GUIDE_PATH.read_text(encoding="utf-8"))
+
+
 def single_label_csv(form: dict[str, str]) -> str:
     """CSV text (header + one row) for a label entered in the form."""
     buffer = io.StringIO()
@@ -136,8 +144,10 @@ def make_handler(panel: ControlPanel) -> type[BaseHTTPRequestHandler]:
                     self._html(render.job_page(panel.jobs.current))
                 elif url.path == "/labels":
                     self._labels_page(query.get("ok", [""])[0], query.get("error", [""])[0])
-                elif url.path == "/help":
-                    self._html(render.help_page())
+                elif url.path == "/guide":
+                    self._html(render.guide_page(load_guide()))
+                elif url.path == "/help":  # former address of the guide
+                    self._redirect("/guide")
                 elif url.path == "/tx":
                     self._transaction(query.get("txid", [""])[0].strip().lower())
                 elif match := RUN_PATH.match(url.path):

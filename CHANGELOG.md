@@ -5,6 +5,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-15
+
+### Added
+- The tool is named **Tracery** (project and command names unchanged: `btc-aml-monitor`, `btc-aml`).
+- Control panel: **Guide** shows the full user guide with a table of contents (replaces the short "How to use" page; `/help` redirects).
+- User guide: typical review workflow (section 2).
+
+### Changed
+- Website: a single page. The full user guide replaces the short "How to use it" section and absorbs the former "Known limitations" section (guide section 11). `guide.html` redirects to it. The page is generated from `scripts/site_template.html` and `docs/GUIDE.md` by `scripts/build_site.py`.
+- The Markdown converter moved into the package (`btc_aml.guide`) so the website and the control panel show the same text.
+
 ## [1.3.0] - 2026-10-15
 
 ### Added

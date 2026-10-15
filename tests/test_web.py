@@ -239,3 +239,12 @@ def test_csv_import_skips_duplicates(panel: str) -> None:
     post(f"{panel}/labels/import", {"csv": csv_text})
     _, html = post(f"{panel}/labels/import", {"csv": csv_text})
     assert "0 label(s) added, 1 already present" in html
+
+
+def test_guide_page_shows_the_full_guide(panel: str) -> None:
+    status, html = get(f"{panel}/guide")
+    assert status == 200
+    assert "Tracery user guide" in html
+    assert "The rules in plain words" in html
+    status, html = get(f"{panel}/help")  # former address
+    assert status == 200 and "Tracery user guide" in html
