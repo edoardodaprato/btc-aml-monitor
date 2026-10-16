@@ -269,6 +269,8 @@ def run_page(run: Run, reviewer: str) -> str:
 <p class="muted">Run <code>{escape(run.run_id)}</code> · tool v{escape(str(audit.get("tool_version")))}
 · {total} alerts · <b>{run.reviewed_count} reviewed</b> ·
 <a href="#audit">Audit trail</a></p>
+<p><a class="btn" href="/runs/{run.run_id}/excel">Download Excel</a>
+<span class="small muted">all tables in one workbook, with your review decisions</span></p>
 <p class="small">Files: {downloads}</p>"""
     if run.mode == "blocks":
         content = _block_results(run, reviewer)

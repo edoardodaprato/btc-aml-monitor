@@ -248,3 +248,37 @@ def test_guide_page_shows_the_full_guide(panel: str) -> None:
     assert "The rules in plain words" in html
     status, html = get(f"{panel}/help")  # former address
     assert status == 200 and "Tracery user guide" in html
+
+
+def test_run_downloads_as_an_excel_workbook(panel: str, panel_config: AppConfig) -> None:
+    import io
+    import zipfile
+
+    install_example_run(panel_config)
+    post(
+        f"{panel}/runs/{EXAMPLE_RUN}/review",
+        {
+            "alert_id": f"{EXAMPLE_RUN}-00001",
+            "decision": "escalate",
+            "note": "SDN",
+            "reviewer": "ED",
+        },
+    )
+    _, html = get(f"{panel}/runs/{EXAMPLE_RUN}")
+    assert f"/runs/{EXAMPLE_RUN}/excel" in html
+
+    with urllib.request.urlopen(f"{panel}/runs/{EXAMPLE_RUN}/excel") as response:
+        assert "spreadsheetml" in response.headers["Content-Type"]
+        assert f"tracery_{EXAMPLE_RUN}.xlsx" in response.headers["Content-Disposition"]
+        data = response.read()
+    with zipfile.ZipFile(io.BytesIO(data)) as workbook:
+        assert workbook.testzip() is None
+        names = workbook.read("xl/workbook.xml").decode()
+        for sheet in ("Summary", "Address scores", "Alerts", "Transactions"):
+            assert f'name="{sheet}"' in names
+        sheets = "".join(
+            workbook.read(n).decode() for n in workbook.namelist() if n.startswith("xl/worksheets/")
+        )
+    assert "12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL" in sheets
+    assert "Escalate (possible suspicious activity)" in sheets
+    assert str(Path.home()) not in sheets  # no local paths in the workbook

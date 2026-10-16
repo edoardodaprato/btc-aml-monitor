@@ -2,7 +2,7 @@
 
 Tracery (project name `btc-aml-monitor`) is an open-source tool that checks Bitcoin
 addresses and transactions for money-laundering and sanctions red flags. This guide is for
-readers starting from scratch and describes version 1.4.0.
+readers starting from scratch and describes version 1.5.0.
 
 ## 1. Installation
 
@@ -36,10 +36,17 @@ After the installation, everything can be done from a page in your browser.
 
 **Start it.** In Finder, open the project folder and double-click
 `start-control-panel.command`. (The first time, macOS may ask for confirmation: right-click
-the file, choose *Open*, then *Open* again.) A terminal window opens and the control panel
-appears in your browser at `http://127.0.0.1:8765/`. Keep the terminal window open while you
-work; close it (or press Ctrl+C in it) to stop the panel. From a terminal, the same is
-`btc-aml ui`.
+the file, choose *Open*, then *Open* again.) The control panel appears in your browser at
+`http://127.0.0.1:8765/` and the small terminal window can be closed.
+
+**It stays on.** The first double-click installs the panel as a background service of your
+Mac: from then on it is always running, starts by itself when you log in and restarts by
+itself if it ever stops, so a bookmark to `http://127.0.0.1:8765/` is enough (useful during
+a demo). To switch it off, double-click `stop-control-panel.command`; `start-control-panel.command`
+switches it on again. If something looks wrong, the panel writes its messages to
+`output/control-panel.log`. From a terminal, the same service is managed with
+`scripts/control-panel-service.sh install | uninstall | status`, and `btc-aml ui` runs the
+panel in the foreground instead.
 
 The panel is reachable **only from your computer**: nothing is published online.
 
@@ -58,7 +65,11 @@ The panel is reachable **only from your computer**: nothing is published online.
 alert with its explanation, amount and regulatory reference, and warnings when a limit was
 hit (⚠). At the bottom, the **Audit trail** shows when the run was made, with which tool
 version, rules and thresholds, OFAC list version and data sources, plus the full
-`audit_log.json`. Every report file can be downloaded from the top of the page.
+`audit_log.json`. **Download Excel**, at the top of the page, gives the whole run as one
+workbook: a *Summary* sheet with the audit trail and one sheet per report (scores, alerts,
+transactions or blocks), with filters on every column; the alerts sheet also contains your
+review decisions, notes and reviewer. Each original report file (CSV, JSON) can also be
+downloaded on its own.
 
 **Manual review.** Under each alert:
 
@@ -79,7 +90,7 @@ changed, so the tool's output and the human decision stay separate, as an audito
 2. Analyse the addresses of the customer or counterparty.
 3. Read the score and its reasons; open the most severe alerts first.
 4. Verify each alert on the block explorer; if useful, scan the blocks of key transactions.
-5. Record a decision and a note for every alert, and download `review.csv` for the file.
+5. Record a decision and a note for every alert, then press **Download Excel** for the file.
 
 **Where to find addresses and blocks.** Everything on the Bitcoin blockchain is public.
 A block explorer such as [mempool.space](https://mempool.space) lets you search any address,

@@ -5,6 +5,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-16
+
+### Added
+- Control panel: **Download Excel** on every run: one `.xlsx` workbook with a Summary sheet (the audit trail), one sheet per report and the review decisions on the alerts sheet. Written with the standard library only (`btc_aml.reports.excel`), no new dependency.
+- macOS background service for the control panel (`scripts/control-panel-service.sh`, a per-user LaunchAgent): it starts at login, restarts by itself if it stops and needs no open Terminal window. `start-control-panel.command` installs it; `stop-control-panel.command` removes it.
+
 ## [1.4.0] - 2026-10-15
 
 ### Added

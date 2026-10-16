@@ -210,7 +210,7 @@
     <div class="stats">
       <div class="stat"><b>21</b><span>red-flag rules (FATF, EBA, TFR)</span></div>
       <div class="stat"><b>532</b><span>OFAC-listed Bitcoin addresses screened</span></div>
-      <div class="stat"><b>169</b><span>offline tests, CI on every push</span></div>
+      <div class="stat"><b>173</b><span>offline tests, CI on every push</span></div>
       <div class="stat"><b>€0</b><span>no paid APIs, no node, runs on a laptop</span></div>
     </div>
   </div>
@@ -316,7 +316,8 @@
           decision on every alert (escalate, false positive, explained) with a note and the reviewer's
           name. Evidence links open each transaction on a public block explorer for independent
           verification; decisions are exported as <code>review.csv</code> next to the untouched
-          automated reports.</p>
+          automated reports, and every run downloads as one Excel workbook with the audit summary,
+          all reports and the review decisions.</p>
       </div>
     </div>
   </section>
@@ -426,7 +427,7 @@ Addresses for review: 2 (+474 large-cluster members, commented out)</pre>
         </aside>
         <article class="guide">
 <!-- Generated from docs/GUIDE.md by scripts/build_site.py. Edit the guide, not this page. -->
-<p>Tracery (project name <code>btc-aml-monitor</code>) is an open-source tool that checks Bitcoin addresses and transactions for money-laundering and sanctions red flags. This guide is for readers starting from scratch and describes version 1.4.0.</p>
+<p>Tracery (project name <code>btc-aml-monitor</code>) is an open-source tool that checks Bitcoin addresses and transactions for money-laundering and sanctions red flags. This guide is for readers starting from scratch and describes version 1.5.0.</p>
 <h3 id="1-installation">1. Installation</h3>
 <p>You need Python 3.11 or later and Git. In a terminal:</p>
 <pre><code>git clone https://github.com/edoardodaprato/btc-aml-monitor.git
@@ -440,16 +441,17 @@ pip install -e &quot;.[dev]&quot;</code></pre>
 pytest</code></pre>
 <h3 id="2-the-control-panel-no-terminal-needed">2. The control panel (no terminal needed)</h3>
 <p>After the installation, everything can be done from a page in your browser.</p>
-<p><strong>Start it.</strong> In Finder, open the project folder and double-click <code>start-control-panel.command</code>. (The first time, macOS may ask for confirmation: right-click the file, choose <em>Open</em>, then <em>Open</em> again.) A terminal window opens and the control panel appears in your browser at <code>http://127.0.0.1:8765/</code>. Keep the terminal window open while you work; close it (or press Ctrl+C in it) to stop the panel. From a terminal, the same is <code>btc-aml ui</code>.</p>
+<p><strong>Start it.</strong> In Finder, open the project folder and double-click <code>start-control-panel.command</code>. (The first time, macOS may ask for confirmation: right-click the file, choose <em>Open</em>, then <em>Open</em> again.) The control panel appears in your browser at <code>http://127.0.0.1:8765/</code> and the small terminal window can be closed.</p>
+<p><strong>It stays on.</strong> The first double-click installs the panel as a background service of your Mac: from then on it is always running, starts by itself when you log in and restarts by itself if it ever stops, so a bookmark to <code>http://127.0.0.1:8765/</code> is enough (useful during a demo). To switch it off, double-click <code>stop-control-panel.command</code>; <code>start-control-panel.command</code> switches it on again. If something looks wrong, the panel writes its messages to <code>output/control-panel.log</code>. From a terminal, the same service is managed with <code>scripts/control-panel-service.sh install | uninstall | status</code>, and <code>btc-aml ui</code> runs the panel in the foreground instead.</p>
 <p>The panel is reachable <strong>only from your computer</strong>: nothing is published online.</p>
 <p><strong>What you can do:</strong></p>
 <div class="table-wrap"><table><thead><tr><th>Section</th><th>What it does</th></tr></thead><tbody><tr><td>1 · Analyse addresses</td><td>Paste addresses (one per line) and start an address-mode analysis. A progress page follows the run; when it is done, <em>Open the results</em>.</td></tr><tr><td>2 · Scan blocks</td><td>Enter a block height (and optionally a last one) to scan up to 10 blocks.</td></tr><tr><td>3 · Check one transaction</td><td>Paste a txid for a quick check of that transaction alone (not saved).</td></tr><tr><td>Reference data</td><td>Update the OFAC list and the ECB rates with one click; see which configuration is in use.</td></tr><tr><td>Labels</td><td>Add your own address labels one by one or by pasting a CSV, and see all of them with their sources (section 5).</td></tr><tr><td>Past runs</td><td>Every analysis ever run, with the number of alerts and how many you have reviewed.</td></tr></tbody></table></div>
-<p><strong>Reading a run.</strong> The results page shows the score of each address with the reasons, every alert with its explanation, amount and regulatory reference, and warnings when a limit was hit (⚠). At the bottom, the <strong>Audit trail</strong> shows when the run was made, with which tool version, rules and thresholds, OFAC list version and data sources, plus the full <code>audit_log.json</code>. Every report file can be downloaded from the top of the page.</p>
+<p><strong>Reading a run.</strong> The results page shows the score of each address with the reasons, every alert with its explanation, amount and regulatory reference, and warnings when a limit was hit (⚠). At the bottom, the <strong>Audit trail</strong> shows when the run was made, with which tool version, rules and thresholds, OFAC list version and data sources, plus the full <code>audit_log.json</code>. <strong>Download Excel</strong>, at the top of the page, gives the whole run as one workbook: a <em>Summary</em> sheet with the audit trail and one sheet per report (scores, alerts, transactions or blocks), with filters on every column; the alerts sheet also contains your review decisions, notes and reviewer. Each original report file (CSV, JSON) can also be downloaded on its own.</p>
 <p><strong>Manual review.</strong> Under each alert:</p>
 <ol><li>Open the <strong>evidence links</strong>: they show the transactions on mempool.space, a public block explorer, so you can check amounts, dates and addresses independently of the tool.</li><li>Choose a <strong>decision</strong>: <em>Escalate (possible suspicious activity)</em>, <em>False positive</em> or <em>Explained, no action</em>.</li><li>Write a <strong>note</strong> with your reasoning (documents checked, customer explanation...) and your name or initials as <strong>reviewer</strong>, then <em>Save</em>.</li></ol>
 <p>Decisions are stored in the run folder as <code>review.json</code> and exported as <code>review.csv</code> (one row per alert, with decision, note, reviewer and time). The automated reports are never changed, so the tool's output and the human decision stay separate, as an auditor expects.</p>
 <p><strong>Typical workflow.</strong></p>
-<ol><li>Update the OFAC list.</li><li>Analyse the addresses of the customer or counterparty.</li><li>Read the score and its reasons; open the most severe alerts first.</li><li>Verify each alert on the block explorer; if useful, scan the blocks of key transactions.</li><li>Record a decision and a note for every alert, and download <code>review.csv</code> for the file.</li></ol>
+<ol><li>Update the OFAC list.</li><li>Analyse the addresses of the customer or counterparty.</li><li>Read the score and its reasons; open the most severe alerts first.</li><li>Verify each alert on the block explorer; if useful, scan the blocks of key transactions.</li><li>Record a decision and a note for every alert, then press <strong>Download Excel</strong> for the file.</li></ol>
 <p><strong>Where to find addresses and blocks.</strong> Everything on the Bitcoin blockchain is public. A block explorer such as <a href="https://mempool.space">mempool.space</a> lets you search any address, transaction id or block number (the block <em>height</em>; the first block is 0). Good starting points are sanctions press releases (OFAC), court filings and announcements by Europol or the U.S. Department of Justice, which often quote addresses or transaction ids. From an analysed address, open <em>All analysed transactions</em> and press <strong>Scan block</strong> next to a transaction to check everything else in that block. A random block mostly shows ordinary exchange and mining-pool activity: block scan is most useful when you already know something happened there.</p>
 <h3 id="3-configuration">3. Configuration</h3>
 <p>All thresholds, weights and limits live in two text files that can be changed without touching the code:</p>

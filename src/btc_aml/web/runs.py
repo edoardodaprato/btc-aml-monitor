@@ -13,10 +13,13 @@ from __future__ import annotations
 import csv
 import json
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from btc_aml.reports.excel import Sheet, workbook_bytes
 
 RUN_ID = re.compile(r"^\d{8}T\d{6}Z$")
 DECISIONS = {
@@ -38,6 +41,13 @@ DOWNLOADABLE = frozenset(
         "review.csv",
     }
 )
+SHEET_TITLES = {
+    "address_scores": "Address scores",
+    "alerts": "Alerts",
+    "transactions": "Transactions",
+    "blocks": "Blocks",
+    "block_alerts": "Block alerts",
+}
 REVIEW_COLUMNS = ("alert_id", "rule_id", "subject", "decision", "note", "reviewer", "reviewed_at")
 
 
@@ -98,6 +108,47 @@ def run_file(output_dir: Path, run_id: str, name: str) -> Path:
     if name not in DOWNLOADABLE or not path.is_file():
         raise RunNotFoundError(f"No file {name} in run {run_id}")
     return path
+
+
+def excel_name(run: Run) -> str:
+    return f"tracery_{run.run_id}.xlsx"
+
+
+def run_workbook(run: Run) -> bytes:
+    """The whole run as one Excel workbook.
+
+    Sheets: a summary of the audit log, then every report table. The alerts sheet also
+    carries the reviewer's decision, note and date, so it doubles as the review export.
+    """
+    sheets = [Sheet("Summary", ("field", "value"), list(_flatten(run.audit)))]
+    for name, rows in run.tables.items():
+        header = list(rows[0]) if rows else []
+        table = [[row.get(column, "") for column in header] for row in rows]
+        if name in ("alerts", "block_alerts"):
+            header = [*header, "review_decision", "review_note", "reviewer", "reviewed_at"]
+            for row, values in zip(rows, table, strict=True):
+                review = run.decision_of(row["alert_id"])
+                values += [
+                    DECISIONS[review["decision"]],
+                    review.get("note", ""),
+                    review.get("reviewer", ""),
+                    review.get("reviewed_at", ""),
+                ]
+        sheets.append(Sheet(SHEET_TITLES.get(name, name), header, table))
+    return workbook_bytes(sheets)
+
+
+def _flatten(value: Any, prefix: str = "") -> Iterator[tuple[str, str]]:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            yield from _flatten(item, f"{prefix}.{key}" if prefix else str(key))
+    elif isinstance(value, list) and any(isinstance(v, dict | list) for v in value):
+        for index, item in enumerate(value):
+            yield from _flatten(item, f"{prefix}[{index}]")
+    elif isinstance(value, list):
+        yield prefix, ", ".join(str(v) for v in value)
+    else:
+        yield prefix, "" if value is None else str(value)
 
 
 def save_review(

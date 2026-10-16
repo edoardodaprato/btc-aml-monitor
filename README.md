@@ -16,7 +16,7 @@ and the EBA ML/TF Risk Factors Guidelines for crypto-asset service providers. Ev
 explainable: it carries the rule that fired, its regulatory reference, the score contribution
 and the transaction-level evidence.
 
-> **Status: v1.4.0.** Address mode, block-scan mode, 21 rules, explainable scoring, CSV reports,
+> **Status: v1.5.0.** Address mode, block-scan mode, 21 rules, explainable scoring, CSV reports,
 > audit trail and a local control panel with manual alert review. See the [CHANGELOG](CHANGELOG.md).
 
 ## The problem
@@ -69,10 +69,15 @@ btc-aml scan-blocks 733459                           # every transaction of a bl
 btc-aml ui        # or double-click start-control-panel.command on macOS
 ```
 
+On macOS, `start-control-panel.command` installs the panel as a per-user background service
+(LaunchAgent): it starts at login and restarts by itself, so it is always available.
+`stop-control-panel.command` removes it.
+
 A local web page (reachable only from your computer) to run analyses without the
 terminal, update the OFAC list, add address labels, browse past runs, read the audit trail, and **record a
 manual review of every alert**: decision (escalate / false positive / no action), note and
-reviewer, saved as `review.csv` next to the untouched automated reports. Evidence links open
+reviewer, saved as `review.csv` next to the untouched automated reports. Every run downloads as an
+**Excel workbook** (audit summary, all reports, review decisions). Evidence links open
 each transaction on a public block explorer for independent verification.
 
 ### Two modes

@@ -36,9 +36,18 @@ from btc_aml.screening import Screener
 from btc_aml.services import Services
 from btc_aml.web import render
 from btc_aml.web.jobs import JobRunner
-from btc_aml.web.runs import RunNotFoundError, list_runs, load_run, run_file, save_review
+from btc_aml.web.runs import (
+    RunNotFoundError,
+    excel_name,
+    list_runs,
+    load_run,
+    run_file,
+    run_workbook,
+    save_review,
+)
 
 MAX_FORM_BYTES = 200_000
+XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 RUN_PATH = re.compile(r"^/runs/(?P<run_id>[^/]+)(?P<rest>/.*)?$")
 
 
@@ -152,7 +161,10 @@ def make_handler(panel: ControlPanel) -> type[BaseHTTPRequestHandler]:
                     self._transaction(query.get("txid", [""])[0].strip().lower())
                 elif match := RUN_PATH.match(url.path):
                     run_id, rest = match["run_id"], match["rest"] or ""
-                    if rest.startswith("/files/"):
+                    if rest == "/excel":
+                        run = load_run(output_dir, run_id)
+                        self._download(run_workbook(run), excel_name(run), XLSX)
+                    elif rest.startswith("/files/"):
                         self._file(run_file(output_dir, run_id, rest.removeprefix("/files/")))
                     elif rest in ("", "/"):
                         self._html(render.run_page(load_run(output_dir, run_id), panel.reviewer))
@@ -270,6 +282,15 @@ def make_handler(panel: ControlPanel) -> type[BaseHTTPRequestHandler]:
             self.send_header("Content-Type", f"{content_type}; charset=utf-8")
             self.send_header("Content-Disposition", f'attachment; filename="{path.name}"')
             self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+        def _download(self, data: bytes, filename: str, content_type: str) -> None:
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-store")
             self.end_headers()
             self.wfile.write(data)
 

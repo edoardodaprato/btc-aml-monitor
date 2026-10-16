@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "btc-aml-monitor"
-version = "1.4.0"
+version = "1.5.0"
 description = "Tracery: retrospective Bitcoin transaction monitoring for AML compliance: OFAC screening, FATF red-flag rules, multi-hop exposure and explainable risk scoring."
 readme = "README.md"
 license = "MIT"
@@ -41,3 +41,4 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM"]
 [tool.ruff.lint.per-file-ignores]
 "src/btc_aml/web/render.py" = ["E501"]  # HTML templates read better unwrapped
 "scripts/build_site.py" = ["E501"]
+"src/btc_aml/reports/excel.py" = ["E501"]  # spreadsheet XML reads better unwrapped
