@@ -282,3 +282,32 @@ def test_run_downloads_as_an_excel_workbook(panel: str, panel_config: AppConfig)
     assert "12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL" in sheets
     assert "Escalate (possible suspicious activity)" in sheets
     assert str(Path.home()) not in sheets  # no local paths in the workbook
+
+
+def test_control_test_from_the_panel(panel: str, panel_config: AppConfig) -> None:
+    install_example_run(panel_config)
+    status, html = get(f"{panel}/")
+    assert "Control test" in html and f'value="{EXAMPLE_RUN}"' in html
+
+    demo = (PROJECT_ROOT / "examples" / "control_test" / "firm_alerts_demo.csv").read_text()
+    status, html = post(
+        f"{panel}/run/controls",
+        {"alerts_csv": demo, "reperform": EXAMPLE_RUN, "as_of": "2026-10-15", "sla_days": "30"},
+    )
+    assert status == 200
+    assert "Monitoring control test" in html
+    assert "Sanctioned address closed without escalation" in html
+    assert "Re-performance" in html and "sanctions gap" in html
+    run_id = html.split("Run <code>")[1].split("</code>")[0]
+    with urllib.request.urlopen(f"{panel}/runs/{run_id}/excel") as response:
+        assert "spreadsheetml" in response.headers["Content-Type"]
+
+
+def test_control_test_errors_are_shown(panel: str) -> None:
+    _, html = post(f"{panel}/run/controls", {"alerts_csv": "alert_id,address\nA,b\n"})
+    assert "missing the column" in html
+
+
+def test_alert_template_download(panel: str) -> None:
+    status, body = get(f"{panel}/templates/firm_alerts.csv")
+    assert status == 200 and body.startswith("alert_id,address,rule,created_at,status")

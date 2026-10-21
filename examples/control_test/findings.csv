@@ -1,0 +1,17 @@
+alert_id,address,rule,severity,finding,detail
+,12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL,,critical,Sanctions gap,"Address on the OFAC SDN list, no escalated alert at the firm."
+,1H939dom7i4WDLCKyGbXUp3fs9CSTNRzgL,,critical,Sanctions gap,"Address on the OFAC SDN list, no escalated alert at the firm."
+A-0001,12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL,Sanctions screening,critical,Sanctioned address closed without escalation,The address is on the OFAC SDN list (Tracery R01) but the alert was closed as False positive.
+A-0001,12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL,Sanctions screening,high,Closed too fast to have been investigated,Closed 2 minute(s) after it was raised.
+A-0030,bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4,Dust,high,No rationale recorded,A closed alert must say why it was closed.
+A-0031,1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa,Peel chain,high,Open beyond the review deadline,Open for 122 days (deadline 30).
+A-0033,12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL,Pass-through,high,Open beyond the review deadline,Open for 87 days (deadline 30).
+,1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa,,medium,Inconsistent outcomes for the same address,"Some alerts on this address were escalated, others closed as false positive."
+,,Large transfer,medium,Rule never leads to escalation,no escalation in any closed alert: check the rule still targets a real risk
+A-0001,12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL,Sanctions screening,medium,Rationale too short,13 characters (minimum 20).
+A-0003,1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa,Fan-in,medium,Copy-pasted rationale,Same text used in 5 closures.
+A-0004,1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa,Fan-in,medium,Copy-pasted rationale,Same text used in 5 closures.
+A-0005,1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa,Fan-in,medium,Copy-pasted rationale,Same text used in 5 closures.
+A-0006,1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa,Fan-in,medium,Copy-pasted rationale,Same text used in 5 closures.
+A-0007,1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa,Fan-in,medium,Copy-pasted rationale,Same text used in 5 closures.
+A-0030,bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4,Dust,medium,No reviewer recorded,The person accountable for the decision is not identified.

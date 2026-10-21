@@ -1,0 +1,65 @@
+{
+  "run_id": "20261021T095044Z",
+  "mode": "controls",
+  "tool_version": "1.6.0",
+  "started_at": "2026-10-21T09:50:44+00:00",
+  "finished_at": "2026-10-21T09:50:44+00:00",
+  "input": {
+    "file": "firm_alerts_demo.csv",
+    "sha256": "1a638344814acaea2279d31951671b048ec5f29b3eb0af3185196001a777a479",
+    "alerts": 33
+  },
+  "results": {
+    "alerts_tested": 33,
+    "rows_rejected": 3,
+    "open_alerts": 3,
+    "open_over_sla": 2,
+    "closed_alerts": 30,
+    "escalated": 1,
+    "findings_by_severity": {
+      "critical": 3,
+      "high": 4,
+      "medium": 9
+    },
+    "reconciliation": {
+      "sanctions gap": 2,
+      "firm only": 1,
+      "outside re-performed population": 1
+    },
+    "qa_sample_size": 30
+  },
+  "parameters": {
+    "as_of": "2026-10-15",
+    "sla_days": 30,
+    "fast_closure_minutes": 5,
+    "min_rationale_chars": 20,
+    "repeated_rationale_min": 5,
+    "max_closures_per_reviewer_day": 50,
+    "zero_conversion_min_closed": 20,
+    "qa_confidence": 0.95,
+    "qa_tolerable_error": 0.05,
+    "tracery_alert_band": "High"
+  },
+  "reperformed_against": {
+    "run_id": "20261009T223246Z",
+    "tool_version": "1.0.0",
+    "config_hash": "cdcab9e74cbfabb2",
+    "ofac_version": "2026-10-05 / sha256:b61f54eafad7",
+    "addresses": 3
+  },
+  "qa_sample": {
+    "method": "zero-defect attribute sampling: n = ln(1 - confidence) / ln(1 - tolerable error)",
+    "size_required": 59,
+    "size_drawn": 30,
+    "seed": 442729284,
+    "seed_source": "first 8 hex digits of the input SHA-256 (redrawable)"
+  },
+  "report_files": {
+    "data_quality": "data_quality.csv",
+    "rule_metrics": "rule_metrics.csv",
+    "backlog": "backlog.csv",
+    "findings": "findings.csv",
+    "qa_sample": "qa_sample.csv",
+    "reconciliation": "reconciliation.csv"
+  }
+}
