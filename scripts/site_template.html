@@ -189,7 +189,7 @@
       <a href="#rules">Rules</a>
       <a href="#example">Example</a>
       <a href="#guide">Guide</a>
-      <a href="#12-limitations-compared-with-commercial-tools">Limitations</a>
+      <a href="#11-limitations-compared-with-commercial-tools">Limitations</a>
       <a href="https://github.com/edoardodaprato/btc-aml-monitor">GitHub</a>
     </nav>
   </div>
@@ -210,7 +210,7 @@
     <div class="stats">
       <div class="stat"><b>21</b><span>red-flag rules (FATF, EBA, TFR)</span></div>
       <div class="stat"><b>532</b><span>OFAC-listed Bitcoin addresses screened</span></div>
-      <div class="stat"><b>185</b><span>offline tests, CI on every push</span></div>
+      <div class="stat"><b>173</b><span>offline tests, CI on every push</span></div>
       <div class="stat"><b>€0</b><span>no paid APIs, no node, runs on a laptop</span></div>
     </div>
   </div>
@@ -293,9 +293,8 @@
 
   <section id="modes">
     <div class="wrap">
-      <h2>Two modes, a control test, one control panel</h2>
-      <p class="sub">Start from the customers you care about, or from the blockchain itself, or test
-        another firm's monitoring.</p>
+      <h2>Two modes, one control panel</h2>
+      <p class="sub">Start from the customers you care about, or from the blockchain itself.</p>
       <div class="grid-2">
         <div class="card">
           <h3>Address mode · <code>scan-addresses</code></h3>
@@ -309,15 +308,6 @@
             transaction, clusters addresses across the block, and lists sanctioned addresses and their
             co-spenders for a full address-mode review.</p>
         </div>
-      </div>
-      <div class="card" style="margin-top:16px">
-        <h3>Control test for auditors and supervisors · <code>test-controls</code></h3>
-        <p>Takes a firm's alert export and tests its monitoring the way an auditor would: data quality,
-          re-performance against an independent Tracery analysis of the same addresses (including
-          sanctioned addresses the firm did not escalate), per-rule escalation rates, backlog ageing,
-          closure quality (too fast, unexplained, copy-pasted, inconsistent) and a reproducible QA
-          sample sized for zero-defect testing. No model, no prediction: every finding points to rows
-          of the file.</p>
       </div>
       <div class="card" style="margin-top:16px">
         <h3>Control panel and manual review · <code>btc-aml ui</code></h3>

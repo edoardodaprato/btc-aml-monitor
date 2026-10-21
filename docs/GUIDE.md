@@ -2,7 +2,7 @@
 
 Tracery (project name `btc-aml-monitor`) is an open-source tool that checks Bitcoin
 addresses and transactions for money-laundering and sanctions red flags. This guide is for
-readers starting from scratch and describes version 1.6.0.
+readers starting from scratch and describes version 1.5.0.
 
 ## 1. Installation
 
@@ -59,8 +59,7 @@ The panel is reachable **only from your computer**: nothing is published online.
 | 3 · Check one transaction | Paste a txid for a quick check of that transaction alone (not saved). |
 | Reference data | Update the OFAC list and the ECB rates with one click; see which configuration is in use. |
 | Labels | Add your own address labels one by one or by pasting a CSV, and see all of them with their sources (section 5). |
-| 4 · Control test | Paste a firm's alert export to test its monitoring: data quality, re-performance, rule metrics, backlog, closure quality and a QA sample (section 10). |
-| Past runs | Every analysis and control test ever run, with the number of alerts and how many you have reviewed. |
+| Past runs | Every analysis ever run, with the number of alerts and how many you have reviewed. |
 
 **Reading a run.** The results page shows the score of each address with the reasons, every
 alert with its explanation, amount and regulatory reference, and warnings when a limit was
@@ -339,71 +338,14 @@ transfers, batch payments, consolidations) are mostly normal exchange and mining
 activity. Any block has dozens of them, and they should be read as a list of things to
 look at, not as established suspicions.
 
-## 10. Testing a firm's monitoring (control test)
+## 10. Ready-made examples
 
-The first nine sections use Tracery as a monitoring system. The **control test** uses it the
-other way round: to test **someone else's** monitoring, as an internal auditor, a second-line
-reviewer or a supervisor would. It answers the questions behind most enforcement cases on
-transaction monitoring: are alerts reviewed in time, are closures defensible, does each rule
-earn its place, and did the system miss anything an independent check would catch?
-
-**Input.** The firm's alert export, one row per alert, as a CSV file with these columns
-(download the template from the control panel):
-
-| Column | Required | Content |
-|---|---|---|
-| `alert_id` | yes | The firm's alert reference |
-| `address` | yes | The Bitcoin address the alert is about |
-| `rule` | yes | The firm's rule or scenario name |
-| `created_at` | yes | When the alert was raised (ISO date, for example `2026-09-01T10:00:00Z`) |
-| `status` | yes | `open` or `closed` |
-| `disposition` | for closed alerts | `escalated`, `false_positive` or `no_action` (common synonyms such as `SAR` or `FP` are accepted) |
-| `closed_at`, `reviewer`, `rationale`, `txid` | no | When and by whom it was closed, why, and the transaction concerned |
-
-**Run it.** In the control panel, card **4 · Control test**: paste the file, optionally choose
-an address analysis to **re-perform against**, set the test date and the review deadline,
-and press *Run control test*. From a terminal:
-
-```bash
-btc-aml test-controls firm_alerts.csv --reperform 20261009T223246Z --as-of 2026-10-15
-```
-
-**What it checks.**
-
-| Check | What it shows | Why it matters |
-|---|---|---|
-| Data quality | Missing required fields, duplicate alert ids, unreadable dates, closures before creation, closed alerts without a disposition | Testing on incomplete data gives false comfort; bad rows are listed and left out |
-| Re-performance | Address by address, the firm's alerts compared with an independent Tracery analysis of the same addresses: *sanctions gap* (an OFAC-listed address the firm did not escalate), *possible missed alert* (Tracery scores it High or Severe, the firm raised nothing), *firm only*, *agreed* | Re-running the control over the whole population, not a sample, is what a public blockchain makes possible |
-| Rule metrics | Per rule: alerts, open, escalated, false positives, escalation rate, median days to close; rules with 20 or more closures and no escalation | Shows which rules produce work but no outcome and need tuning or a rationale |
-| Backlog | Open alerts by age (0-7, 8-30, 31-90, over 90 days) and beyond the review deadline | Unreviewed alerts were the core of the 2023 NYDFS order against Coinbase |
-| Closure quality | Sanctioned address closed without escalation; closed within 5 minutes; no rationale or a rationale under 20 characters; the same rationale pasted into 5 or more closures; no reviewer; more than 50 closures by one reviewer in a day; the same address both escalated and closed as false positive | The signs of rubber-stamping that quality reviews look for |
-| QA sample | A random sample of closed alerts to re-review, sized for zero-defect testing (59 alerts for 95% confidence that no more than 5% of closures are wrong) | The seed comes from the file itself, so anyone can redraw exactly the same sample |
-
-Every threshold is recorded in the audit log of the run. **Findings are prompts for review,
-not conclusions**: each points to rows of the firm's file that a reviewer should open.
-Nothing is predicted and no model is involved. A *firm only* result, for example, can mean
-that the firm has a rule Tracery lacks rather than that it over-alerts.
-
-**Files produced** in `output/<run_id>/`: `findings.csv`, `reconciliation.csv` (when
-re-performed), `rule_metrics.csv`, `backlog.csv`, `data_quality.csv`, `qa_sample.csv` (with
-empty `qa_outcome` and `qa_comment` columns to fill in), `audit_log.json` and `run.log`. As for
-every run, **Download Excel** puts them all in one workbook.
-
-**Try it.** `examples/control_test/firm_alerts_demo.csv` is a **synthetic** alert file built
-on the demo addresses. Re-performed against the example address analysis, it shows each kind
-of finding: an OFAC-listed address closed as a false positive two minutes after the alert, a
-second OFAC-listed address never alerted, copy-pasted rationales, a rule that never
-escalates, old open alerts and three unusable rows.
-
-## 11. Ready-made examples
-
-The `examples/` folder contains the results of real analyses and of a control test, so you
-can look at the files without running anything:
+The `examples/` folder contains the real results of two analyses, so you can look at the
+files without running anything:
 
 - `examples/address_mode/`: the three addresses of `demo_addresses.txt` (two on the OFAC
   list and the genesis block address);
-- `examples/block_scan/`: the scan of block 733459;
-- `examples/control_test/`: a control test of a synthetic alert file (section 10).
+- `examples/block_scan/`: the scan of block 733459.
 
 Addresses that are not public for a documented reason (OFAC list or demo addresses) are
 replaced with `<address redacted>`. The others belong to ordinary people: publishing them
@@ -411,7 +353,7 @@ next to an alert would read as an accusation, even though an alert is only a heu
 Transaction ids (txids) are kept, because they serve as evidence and anyone can check them
 on a block explorer.
 
-## 12. Limitations compared with commercial tools
+## 11. Limitations compared with commercial tools
 
 This project shows the logic of a transaction-monitoring system, but it does **not
 replace** tools such as Chainalysis, Elliptic or TRM Labs. The main differences:
@@ -439,7 +381,7 @@ replace** tools such as Chainalysis, Elliptic or TRM Labs. The main differences:
 - **Not a validated system.** There is no model validation, case management, four-eyes
   review or alert tuning on a real customer base.
 
-## 13. Available commands
+## 12. Available commands
 
 | Command | What it does |
 |---|---|
@@ -452,6 +394,5 @@ replace** tools such as Chainalysis, Elliptic or TRM Labs. The main differences:
 | `btc-aml analyze <address>` | Analyses one address with every rule |
 | `btc-aml scan-addresses <file>` | Analyses every address in a file and writes the reports |
 | `btc-aml scan-blocks <start> [end]` | Checks every transaction of a block range |
-| `btc-aml test-controls <alerts.csv> [--reperform RUN_ID]` | Tests a firm's alert export (section 10) |
 | `btc-aml ui` | Opens the control panel in the browser |
 | `btc-aml cache-stats` | Shows how much data is stored in the local cache |

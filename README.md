@@ -16,9 +16,8 @@ and the EBA ML/TF Risk Factors Guidelines for crypto-asset service providers. Ev
 explainable: it carries the rule that fired, its regulatory reference, the score contribution
 and the transaction-level evidence.
 
-> **Status: v1.6.0.** Address mode, block-scan mode, 21 rules, explainable scoring, CSV reports,
-> audit trail, a local control panel with manual alert review, and a control test of a firm's
-> monitoring for auditors and supervisors. See the [CHANGELOG](CHANGELOG.md).
+> **Status: v1.5.0.** Address mode, block-scan mode, 21 rules, explainable scoring, CSV reports,
+> audit trail and a local control panel with manual alert review. See the [CHANGELOG](CHANGELOG.md).
 
 ## The problem
 
@@ -91,14 +90,6 @@ each transaction on a public block explorer for independent verification.
   (R01, R03, R04, R09, R14, R16, R19, R21) and clusters addresses across the block. It
   writes `blocks.csv`, `block_alerts.csv` and `addresses_for_review.txt`, a list of
   sanctioned or labelled addresses and their co-spenders ready for address mode.
-
-- **Control test** (`test-controls`) tests **another firm's** monitoring, as an auditor or a
-  supervisor would. From the firm's alert export it checks data quality, re-performs the
-  monitoring with an independent Tracery analysis of the same addresses (flagging sanctioned
-  addresses the firm did not escalate), measures each rule (alerts, escalation rate, time to
-  close), ages the backlog, flags weak closures (too fast, unexplained, copy-pasted,
-  inconsistent) and draws a reproducible QA sample. No model is involved: every finding points
-  to rows of the file. A synthetic demo is in [`examples/control_test/`](examples/control_test).
 
 A step-by-step user guide is available in [docs/GUIDE.md](docs/GUIDE.md), on the
 [website](https://edoardodaprato.github.io/btc-aml-monitor/#guide) and in the control panel (*Guide*).
@@ -302,13 +293,9 @@ fails if local data, outputs or secrets are ever tracked by git.
 - [x] Multi-hop exposure, clustering and change detection
 - [x] Block-range scanning
 - [x] Portfolio polish: example outputs, architecture diagram, known limitations, v1.0.0
-- [x] Control panel, manual review and Excel export
-- [x] Control test of a firm's monitoring (re-performance, rule metrics, backlog, closure quality, QA sample)
 
-Possible next steps: threshold sensitivity (above/below-the-line) and attribution
-sensitivity tests, tracing funds to the exchange where they are cashed out, an advisory
-model that ranks alerts using recorded analyst decisions (research only, never closing
-alerts), more chains (Ethereum).
+Possible next steps: HTML report per address, more chains (Ethereum), label import from
+public datasets with provenance checks, alert tuning with a labelled sample.
 
 ## Disclaimer
 

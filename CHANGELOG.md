@@ -5,20 +5,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
-## [1.6.0] - 2026-10-21
-
-### Added
-- **Control test** of a firm's transaction monitoring, for auditors, second-line reviewers and supervisors (`btc-aml test-controls`, or card *4 · Control test* in the control panel). From the firm's alert export (CSV template provided) it produces:
-  - data-quality issues (missing fields, duplicate ids, unreadable or impossible dates);
-  - re-performance against an independent Tracery address analysis of the same addresses: sanctions gaps, possible missed alerts, firm-only alerts;
-  - rule metrics (alerts, escalation rate, median days to close) and rules that never lead to escalation;
-  - backlog ageing against a review deadline;
-  - closure-quality findings: sanctioned address closed without escalation, closures too fast, missing or copy-pasted rationale, no reviewer, reviewer volume outliers, inconsistent outcomes for the same address;
-  - a QA sample of closed alerts sized for zero-defect attribute testing, drawn with a seed derived from the input so it can be redrawn.
-  Every threshold is recorded in the run's audit log; results open in the panel and download as Excel like any other run.
-- `examples/control_test/`: a synthetic alert file and the resulting reports.
-- User guide section 10 (sections 10-12 become 11-13).
-
 ## [1.5.0] - 2026-10-16
 
 ### Added

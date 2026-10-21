@@ -42,7 +42,6 @@ h1{font-size:24px;margin:0 0 4px}h2{font-size:19px;margin:28px 0 12px}h3{font-si
 .muted{color:var(--muted)}.small{font-size:13px}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.big{font-size:28px;font-weight:700;margin:4px 0}.nowrap{white-space:nowrap}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px}
 .banner{border-radius:10px;padding:12px 16px;margin:0 0 18px;border:1px solid var(--border);
 background:var(--accent-soft)}
@@ -88,7 +87,7 @@ dl.facts dt{color:var(--muted)}dl.facts dd{margin:0;word-break:break-word}
 .guide blockquote{margin:14px 0;padding:10px 14px;background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 8px 8px 0}
 .guide blockquote p{margin:0}.guide .table-wrap{margin:14px 0}.guide li{margin-bottom:4px}
 .inline-form{display:inline}.inline-form button{margin:0 0 0 6px;padding:1px 10px;font-size:12px;white-space:nowrap}
-@media(max-width:860px){.grid,.grid-2,.grid-4,.guide-layout{grid-template-columns:1fr}.guide-toc{position:static;max-height:none}.review{grid-template-columns:1fr}
+@media(max-width:860px){.grid,.grid-2,.guide-layout{grid-template-columns:1fr}.guide-toc{position:static;max-height:none}.review{grid-template-columns:1fr}
 dl.facts{grid-template-columns:1fr}}
 """
 
@@ -157,41 +156,6 @@ New here? Read the <a href="/guide">Guide</a>.</p>
     <button>Check</button>
   </form>
 </div>
-<h2>Test a firm's monitoring</h2>
-<div class="grid-2">
-  <form class="card" method="post" action="/run/controls">
-    <h3>4 · Control test</h3>
-    <p class="muted small">Paste a firm's alert export (CSV, one row per alert). Tracery checks
-    the data, the backlog and the quality of every closure, measures each rule and draws a QA
-    sample. <a href="/templates/firm_alerts.csv">Download the template</a>.</p>
-    <label for="alerts_csv">Alert export (CSV)</label>
-    <textarea id="alerts_csv" name="alerts_csv" required placeholder="alert_id,address,rule,created_at,status,disposition,closed_at,reviewer,rationale,txid"></textarea>
-    <label for="reperform">Re-perform against (optional)</label>
-    <select id="reperform" name="reperform"><option value="">No re-performance</option>{_address_run_options(runs)}</select>
-    <div class="grid-2">
-      <div><label for="as_of">Test date</label><input id="as_of" name="as_of" type="date" value="{escape(status["today"])}"></div>
-      <div><label for="sla_days">Review deadline (days)</label><input id="sla_days" name="sla_days" type="number" min="1" value="30"></div>
-    </div>
-    <button>Run control test</button>
-  </form>
-  <div class="card">
-    <h3>What it checks</h3>
-    <ul class="small">
-      <li><b>Data quality</b>: missing fields, duplicates, impossible dates.</li>
-      <li><b>Re-performance</b>: choose an address analysis over the same addresses; Tracery
-      compares its independent result with the firm's alerts and flags sanctioned addresses
-      the firm did not escalate.</li>
-      <li><b>Rule metrics</b>: alerts, escalation rate and time to close per rule; rules that
-      never lead to an escalation.</li>
-      <li><b>Backlog</b>: open alerts by age and beyond the review deadline.</li>
-      <li><b>Closure quality</b>: closures too fast, without rationale, copy-pasted, without a
-      reviewer, or inconsistent for the same address.</li>
-      <li><b>QA sample</b>: a reproducible random sample of closed alerts to re-review.</li>
-    </ul>
-    <p class="small muted">Findings are prompts for review, not conclusions. Nothing is
-    predicted: every result can be traced to a row of the file.</p>
-  </div>
-</div>
 <h2>Reference data</h2>
 <div class="grid">
   <form class="card" method="post" action="/update/ofac">
@@ -228,15 +192,6 @@ def _ofac_status(ofac: dict[str, Any] | None) -> str:
     )
 
 
-def _address_run_options(runs: list[Run]) -> str:
-    return "".join(
-        f'<option value="{escape(run.run_id)}">{escape(_run_time(run.run_id))} · '
-        f"{run.audit.get('results', {}).get('addresses_analysed', 0)} address(es)</option>"
-        for run in runs
-        if run.mode == "addresses"
-    )
-
-
 def _runs_table(runs: list[Run]) -> str:
     if not runs:
         return '<p class="muted">No runs yet.</p>'
@@ -246,15 +201,10 @@ def _runs_table(runs: list[Run]) -> str:
         if run.mode == "blocks":
             blocks = results.get("blocks_scanned", [])
             what = f"Blocks {_block_range(blocks)} · {results.get('transactions_scanned', 0)} tx"
-        elif run.mode == "controls":
-            what = f"{results.get('alerts_tested', 0)} firm alerts tested"
         else:
             what = f"{results.get('addresses_analysed', 0)} address(es)"
         total = len(run.alerts)
         progress = f"{run.reviewed_count} / {total}" if total else "no alerts"
-        if run.mode == "controls":
-            total = len(run.tables.get("findings", []))
-            progress = "findings, see run"
         rows.append(
             f'<tr><td><a href="/runs/{run.run_id}">{escape(_run_time(run.run_id))}</a></td>'
             f"<td>{escape(_mode_name(run.mode))}</td><td>{escape(what)}</td>"
@@ -314,23 +264,14 @@ def run_page(run: Run, reviewer: str) -> str:
         + ["audit_log.json", "run.log"]
         + (["review.csv"] if (run.folder / "review.csv").is_file() else [])
     )
-    if run.mode == "controls":
-        counts = f"{audit.get('results', {}).get('alerts_tested', 0)} firm alerts tested"
-        excel_note = "all tables in one workbook, including the QA sample to fill in"
-    else:
-        counts = f"{total} alerts · <b>{run.reviewed_count} reviewed</b>"
-        excel_note = "all tables in one workbook, with your review decisions"
     header = f"""
 <h1>{escape(_mode_name(run.mode))} · {escape(_run_time(run.run_id))} UTC</h1>
 <p class="muted">Run <code>{escape(run.run_id)}</code> · tool v{escape(str(audit.get("tool_version")))}
-· {counts} · <a href="#audit">Audit trail</a></p>
+· {total} alerts · <b>{run.reviewed_count} reviewed</b> ·
+<a href="#audit">Audit trail</a></p>
 <p><a class="btn" href="/runs/{run.run_id}/excel">Download Excel</a>
-<span class="small muted">{excel_note}</span></p>
+<span class="small muted">all tables in one workbook, with your review decisions</span></p>
 <p class="small">Files: {downloads}</p>"""
-    if run.mode == "controls":
-        return page(
-            f"Run {run.run_id}", header + _control_results(run) + _control_audit_section(run)
-        )
     if run.mode == "blocks":
         content = _block_results(run, reviewer)
     else:
@@ -550,177 +491,6 @@ def _audit_section(run: Run) -> str:
 <details><summary>Full audit_log.json</summary><pre class="log">{raw}</pre></details>"""
 
 
-# --- control test --------------------------------------------------------------------------
-
-SEVERITY_TAG = {"critical": "Severe", "high": "High", "medium": "Medium", "low": "Low"}
-
-
-def _control_results(run: Run) -> str:
-    results = run.audit.get("results", {})
-    by_severity = results.get("findings_by_severity", {})
-    reconciliation = results.get("reconciliation", {})
-    cards = [
-        (
-            "Alerts tested",
-            results.get("alerts_tested", 0),
-            f"{results.get('rows_rejected', 0)} row(s) rejected for data quality",
-        ),
-        (
-            "Open alerts",
-            results.get("open_alerts", 0),
-            f"{results.get('open_over_sla', 0)} beyond the review deadline",
-        ),
-        (
-            "Findings",
-            sum(by_severity.values()),
-            " · ".join(f"{count} {sev}" for sev, count in by_severity.items()) or "none",
-        ),
-        (
-            "Re-performance",
-            sum(reconciliation.values()) or "not run",
-            " · ".join(f"{count} {name}" for name, count in reconciliation.items())
-            or "choose an address analysis to compare",
-        ),
-    ]
-    summary = "".join(
-        f'<div class="card"><h3>{escape(title)}</h3><p class="big">{escape(str(value))}</p>'
-        f'<p class="small muted">{escape(note)}</p></div>'
-        for title, value, note in cards
-    )
-    findings = run.tables.get("findings", [])
-    finding_rows = "".join(
-        f'<tr><td><span class="tag band-{SEVERITY_TAG.get(f["severity"], "Low")}">{escape(f["severity"])}</span></td>'
-        f"<td><b>{escape(f['finding'])}</b><br><span class='small muted'>{escape(f['detail'])}</span></td>"
-        f"<td class='mono small nowrap'>{escape(f['alert_id'])}</td><td>{_address_link(f['address'])}</td>"
-        f"<td>{escape(f['rule'])}</td></tr>"
-        for f in findings
-    )
-    parts = [
-        '<div class="grid-4">' + summary + "</div>",
-        '<p class="small muted">Findings are prompts for review, not conclusions: each one points to '
-        "rows of the firm's file that a reviewer should open.</p>",
-        "<h2>Findings</h2>",
-        '<div class="table-wrap"><table><thead><tr><th>Severity</th><th>Finding</th><th>Alert</th>'
-        f"<th>Address</th><th>Rule</th></tr></thead><tbody>{finding_rows}</tbody></table></div>"
-        if findings
-        else '<p class="muted">No findings.</p>',
-    ]
-    if run.tables.get("reconciliation"):
-        parts += [
-            "<h2>Re-performance</h2>",
-            '<p class="small muted">The firm\'s alerts compared, address by address, with an independent '
-            "Tracery analysis of the same addresses.</p>",
-            _simple_table(
-                run.tables["reconciliation"],
-                (
-                    ("address", "Address"),
-                    ("firm_alerts", "Firm alerts"),
-                    ("firm_escalated", "Escalated"),
-                    ("firm_closed_without_escalation", "Closed, not escalated"),
-                    ("tracery_score", "Tracery score"),
-                    ("tracery_band", "Band"),
-                    ("result", "Result"),
-                    ("note", "Note"),
-                ),
-            ),
-        ]
-    parts += [
-        "<h2>Rule metrics</h2>",
-        _simple_table(
-            run.tables.get("rule_metrics", []),
-            (
-                ("rule", "Rule"),
-                ("alerts", "Alerts"),
-                ("open", "Open"),
-                ("closed", "Closed"),
-                ("escalated", "Escalated"),
-                ("false_positive", "False positive"),
-                ("no_action", "No action"),
-                ("escalation_rate", "Escalation rate"),
-                ("median_days_to_close", "Median days to close"),
-                ("open_over_sla", "Open beyond deadline"),
-                ("finding", "Note"),
-            ),
-        ),
-        "<h2>Backlog</h2>",
-        _simple_table(
-            run.tables.get("backlog", []),
-            (
-                ("age", "Age of open alerts"),
-                ("open_alerts", "Open alerts"),
-                ("over_sla", "Beyond deadline"),
-            ),
-        ),
-        "<h2>Data quality</h2>",
-        _simple_table(
-            run.tables.get("data_quality", []),
-            (
-                ("row", "Row"),
-                ("alert_id", "Alert"),
-                ("field", "Field"),
-                ("severity", "Severity"),
-                ("issue", "Issue"),
-            ),
-            empty="No data-quality issues.",
-        ),
-        "<h2>QA sample</h2>",
-        '<p class="small muted">Re-review these closed alerts and record the outcome in the '
-        "<code>qa_outcome</code> column of <code>qa_sample.csv</code> (or the Excel workbook). The sample "
-        "is drawn with a seed derived from the file, so it can be redrawn identically.</p>",
-        _simple_table(
-            run.tables.get("qa_sample", []),
-            (
-                ("alert_id", "Alert"),
-                ("rule", "Rule"),
-                ("disposition", "Disposition"),
-                ("reviewer", "Reviewer"),
-                ("closed_at", "Closed"),
-                ("rationale", "Rationale"),
-            ),
-            empty="No closed alerts to sample.",
-        ),
-    ]
-    return "".join(parts)
-
-
-def _simple_table(
-    rows: list[dict[str, str]], columns: tuple[tuple[str, str], ...], empty: str = "None."
-) -> str:
-    if not rows:
-        return f'<p class="muted">{escape(empty)}</p>'
-    head = "".join(f"<th>{escape(label)}</th>" for _, label in columns)
-    body = "".join(
-        "<tr>"
-        + "".join(
-            f"<td>{_address_link(row.get(key, ''))}</td>"
-            if key == "address"
-            else f"<td>{escape(str(row.get(key, '')))}</td>"
-            for key, _ in columns
-        )
-        + "</tr>"
-        for row in rows
-    )
-    return f'<div class="table-wrap"><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>'
-
-
-def _control_audit_section(run: Run) -> str:
-    audit = run.audit
-    facts = {
-        "Started / finished (UTC)": f"{audit.get('started_at')} → {audit.get('finished_at')}",
-        "Tool version": audit.get("tool_version"),
-        "Input": json.dumps(audit.get("input", {})),
-        "Re-performed against": json.dumps(audit.get("reperformed_against")),
-        "Parameters": json.dumps(audit.get("parameters", {})),
-        "QA sample": json.dumps(audit.get("qa_sample", {})),
-    }
-    facts_html = "".join(f"<dt>{escape(k)}</dt><dd>{escape(str(v))}</dd>" for k, v in facts.items())
-    raw = escape(json.dumps(audit, indent=2))
-    return f"""
-<h2 id="audit">Audit trail</h2>
-<div class="card"><dl class="facts">{facts_html}</dl></div>
-<details><summary>Full audit_log.json</summary><pre class="log">{raw}</pre></details>"""
-
-
 # --- single transaction ------------------------------------------------------------------
 
 
@@ -883,11 +653,7 @@ def _run_time(run_id: str) -> str:
 
 
 def _mode_name(mode: str) -> str:
-    return {
-        "addresses": "Address analysis",
-        "blocks": "Block scan",
-        "controls": "Monitoring control test",
-    }.get(mode, mode)
+    return {"addresses": "Address analysis", "blocks": "Block scan"}.get(mode, mode)
 
 
 def _block_range(blocks: list[int]) -> str:

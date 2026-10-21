@@ -1,5 +1,0 @@
-age,open_alerts,over_sla
-0-7 days,0,0
-8-30 days,1,0
-31-90 days,1,1
-over 90 days,1,1

@@ -1,5 +1,0 @@
-address,firm_alerts,firm_open,firm_escalated,firm_closed_without_escalation,tracery_score,tracery_band,tracery_rules,result,note
-12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL,2,1,0,1,100,Severe,R01_OFAC_DIRECT;R07_PASS_THROUGH;R16_CONSOLIDATION,sanctions gap,"Address on the OFAC SDN list, no escalated alert at the firm."
-1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa,30,2,1,27,30,Medium,R10_HIGH_VELOCITY;R15_DUST;R16_CONSOLIDATION,firm only,"The firm alerted, Tracery scores it lower: a firm rule Tracery lacks, or over-alerting."
-1H939dom7i4WDLCKyGbXUp3fs9CSTNRzgL,0,0,0,0,100,Severe,R01_OFAC_DIRECT;R04_COINJOIN;R07_PASS_THROUGH;R08_FAN_IN;R11_DORMANT_REACTIVATION;R16_CONSOLIDATION;R21_ANOMALOUS_FEE,sanctions gap,"Address on the OFAC SDN list, no escalated alert at the firm."
-bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4,1,0,0,1,,,,outside re-performed population,The firm alerted on an address the independent run did not cover.

@@ -1,7 +1,0 @@
-rule,alerts,open,closed,escalated,false_positive,no_action,escalation_rate,median_days_to_close,open_over_sla,finding
-Dust,1,0,1,0,1,0,0.0%,2.0,0,
-Fan-in,6,0,6,1,5,0,16.7%,1.0,0,
-Large transfer,22,0,22,0,0,22,0.0%,0.3,0,no escalation in any closed alert: check the rule still targets a real risk
-Pass-through,1,1,0,0,0,0,,,1,
-Peel chain,2,2,0,0,0,0,,,1,
-Sanctions screening,1,0,1,0,1,0,0.0%,0.0,0,

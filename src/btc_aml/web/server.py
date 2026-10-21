@@ -20,12 +20,6 @@ from urllib.parse import parse_qs, quote, urlparse
 import httpx
 
 from btc_aml.config import AppConfig
-from btc_aml.control_testing import (
-    TEMPLATE_CSV,
-    ControlTestError,
-    ControlTestParams,
-    run_control_test_mode,
-)
 from btc_aml.data_sources.ecb import load_ecb_rates
 from btc_aml.data_sources.http import DataSourceError
 from btc_aml.data_sources.labels import (
@@ -52,7 +46,7 @@ from btc_aml.web.runs import (
     save_review,
 )
 
-MAX_FORM_BYTES = 10_000_000  # alert exports can be large
+MAX_FORM_BYTES = 200_000
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 RUN_PATH = re.compile(r"^/runs/(?P<run_id>[^/]+)(?P<rest>/.*)?$")
 
@@ -93,7 +87,6 @@ class ControlPanel:
             "config_hash": config.config_hash,
             "max_blocks": config.max_blocks,
             "tip": self.tip_height(),
-            "today": date.today().isoformat(),
         }
 
     def tip_height(self) -> int | None:
@@ -162,10 +155,6 @@ def make_handler(panel: ControlPanel) -> type[BaseHTTPRequestHandler]:
                     self._labels_page(query.get("ok", [""])[0], query.get("error", [""])[0])
                 elif url.path == "/guide":
                     self._html(render.guide_page(load_guide()))
-                elif url.path == "/templates/firm_alerts.csv":
-                    self._download(
-                        TEMPLATE_CSV.encode("utf-8"), "firm_alerts_template.csv", "text/csv"
-                    )
                 elif url.path == "/help":  # former address of the guide
                     self._redirect("/guide")
                 elif url.path == "/tx":
@@ -224,23 +213,6 @@ def make_handler(panel: ControlPanel) -> type[BaseHTTPRequestHandler]:
                     end = int(form["end"]) if form.get("end") else start
                     panel.jobs.scan_blocks(start, end)
                     self._redirect("/job")
-                elif path == "/run/controls":
-                    as_of = form.get("as_of") or date.today().isoformat()
-                    params = ControlTestParams(
-                        as_of=date.fromisoformat(as_of), sla_days=int(form.get("sla_days") or 30)
-                    )
-                    try:
-                        run = run_control_test_mode(
-                            form.get("alerts_csv", ""),
-                            "pasted alert export",
-                            panel.config.output_dir,
-                            params,
-                            form.get("reperform") or None,
-                        )
-                    except ControlTestError as exc:
-                        self._redirect("/?error=" + quote(str(exc)))
-                        return
-                    self._redirect(f"/runs/{run.run_id}")
                 elif path == "/update/ofac":
                     panel.jobs.update_ofac()
                     self._redirect("/job")

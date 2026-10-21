@@ -12,7 +12,6 @@ import typer
 from btc_aml import __version__
 from btc_aml.analysis import AddressAnalysis, analyze_address
 from btc_aml.config import AppConfig, ConfigError, load_config
-from btc_aml.control_testing import ControlTestError, ControlTestParams, run_control_test_mode
 from btc_aml.data_sources.cache import Cache
 from btc_aml.data_sources.ecb import FxError, update_ecb_rates
 from btc_aml.data_sources.http import DataSourceError
@@ -280,54 +279,6 @@ def scan_blocks(
     )
     typer.echo(f"API requests: {requests}")
     typer.echo(f"Reports and audit log: {result.output_dir}")
-
-
-@app.command("test-controls")
-def test_controls(
-    alerts_file: Annotated[Path, typer.Argument(help="The firm's alert export (CSV).")],
-    reperform: Annotated[
-        str | None,
-        typer.Option(help="Run id of a Tracery address analysis over the same addresses."),
-    ] = None,
-    as_of: Annotated[
-        str | None, typer.Option(help="Test date (YYYY-MM-DD) for alert ages; default today.")
-    ] = None,
-    sla_days: Annotated[int, typer.Option(help="Days within which an alert must be closed.")] = 30,
-    config_dir: ConfigDirOption = Path("config"),
-) -> None:
-    """Test a firm's monitoring: data quality, re-performance, rule metrics, closure quality."""
-    config = _load_config_or_exit(config_dir)
-    if not alerts_file.is_file():
-        _fail(f"File not found: {alerts_file.name}")
-    try:
-        test_date = datetime.fromisoformat(as_of).date() if as_of else datetime.now(UTC).date()
-    except ValueError:
-        _fail(f"Invalid --as-of date {as_of!r}: use YYYY-MM-DD.")
-    params = ControlTestParams(as_of=test_date, sla_days=sla_days)
-    try:
-        run = run_control_test_mode(
-            alerts_file.read_text(encoding="utf-8"),
-            alerts_file.name,
-            config.output_dir,
-            params,
-            reperform,
-        )
-    except ControlTestError as exc:
-        _fail(str(exc))
-    summary = run.result.summary
-    typer.echo(f"Run {run.run_id}: {summary['alerts_tested']} alerts tested")
-    typer.echo(f"  data-quality issues: {len(run.result.data_quality)}")
-    typer.echo(
-        f"  open: {summary['open_alerts']} ({summary['open_over_sla']} over {sla_days} days)"
-    )
-    for severity in ("critical", "high", "medium"):
-        count = summary["findings_by_severity"].get(severity, 0)
-        if count:
-            typer.echo(f"  {severity} findings: {count}")
-    for result, count in sorted(summary["reconciliation"].items()):
-        typer.echo(f"  re-performance, {result}: {count}")
-    typer.echo(f"  QA sample: {summary['qa_sample_size']} closed alerts to re-review")
-    typer.echo(f"Reports and audit log: {run.output_dir}")
 
 
 @app.command("ui")

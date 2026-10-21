@@ -39,21 +39,7 @@ DOWNLOADABLE = frozenset(
         "audit_log.json",
         "run.log",
         "review.csv",
-        "findings.csv",
-        "reconciliation.csv",
-        "rule_metrics.csv",
-        "backlog.csv",
-        "data_quality.csv",
-        "qa_sample.csv",
     }
-)
-CONTROL_TABLES = (
-    "findings",
-    "reconciliation",
-    "rule_metrics",
-    "backlog",
-    "data_quality",
-    "qa_sample",
 )
 SHEET_TITLES = {
     "address_scores": "Address scores",
@@ -61,12 +47,6 @@ SHEET_TITLES = {
     "transactions": "Transactions",
     "blocks": "Blocks",
     "block_alerts": "Block alerts",
-    "findings": "Findings",
-    "reconciliation": "Re-performance",
-    "rule_metrics": "Rule metrics",
-    "backlog": "Backlog",
-    "data_quality": "Data quality",
-    "qa_sample": "QA sample",
 }
 REVIEW_COLUMNS = ("alert_id", "rule_id", "subject", "decision", "note", "reviewer", "reviewed_at")
 
@@ -114,14 +94,7 @@ def load_run(output_dir: Path, run_id: str) -> Run:
     folder = _run_folder(output_dir, run_id)
     audit = json.loads((folder / "audit_log.json").read_text(encoding="utf-8"))
     run = Run(run_id, folder, audit, reviews=_read_reviews(folder))
-    for name in (
-        "address_scores",
-        "alerts",
-        "transactions",
-        "blocks",
-        "block_alerts",
-        *CONTROL_TABLES,
-    ):
+    for name in ("address_scores", "alerts", "transactions", "blocks", "block_alerts"):
         path = folder / f"{name}.csv"
         if path.is_file():
             with path.open(newline="", encoding="utf-8") as handle:

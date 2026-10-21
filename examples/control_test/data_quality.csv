@@ -1,4 +1,0 @@
-row,alert_id,field,severity,issue
-35,A-0002,alert_id,high,duplicate of row 3
-36,A-0034,created_at,high,missing required value
-37,A-0035,status,high,unknown status 'pending' (expected open or closed)
